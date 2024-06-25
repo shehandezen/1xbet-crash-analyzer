@@ -1,0 +1,270 @@
+.App {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  overflow: hidden;
+}
+
+.topBar {
+  position: relative;
+  width: 100%;
+  height: auto;
+  /* border: 1px solid; */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+.topBar .logo {
+  position: relative;
+  padding: 10px 35px;
+}
+
+.topBar .logo img {
+  width: 150px;
+  height: auto;
+}
+
+.topBar .brandName {
+  position: relative;
+  font-size: 25px;
+  font-weight: 800;
+  color: #002B72;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topBar .brandName .version {
+  position: relative;
+  left: 5px;
+  font-size: 11px;
+  color: #fff;
+  padding: 2px 5px;
+  border-radius: 2px;
+  background: #002B72;
+}
+
+.topBar .topTags {
+  position: relative;
+  width: auto;
+  display: flex;
+  width: auto;
+  height: 100%;
+
+}
+
+.topBar .topTags .credit {
+  position: relative;
+  width: auto;
+  height: 100%;
+  padding: 8px 25px;
+  color: #fff;
+  background: #1F72B8;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+
+}
+
+.topBar .topTags .status {
+  position: relative;
+  padding: 8px 25px;
+  width: auto;
+  height: 100%;
+  color: #fff;
+  background: #20c997;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
+
+.chart {
+  position: relative;
+  width: 75%;
+  height: 80%;
+  /* border: 1px solid; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart div {
+  width: 100%;
+  margin-top: 10px;
+  /* position: relative; */
+  /* top: 10px; */
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 2;
+}
+
+.profitTable {
+  position: relative;
+  top: 0px;
+  width: 25%;
+  height: calc(94vh);
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+  display: flex;
+  /* align-items: center;
+  justify-content: center; */
+}
+
+.profitTable table {
+  position: relative;
+  width: 100%;
+  height: auto;
+  font-size: 14px;
+
+}
+
+.profitTable table tr th,
+.profitTable table tr td {
+  padding: 8px 15px;
+  text-align: center;
+  color: #fff;
+}
+
+.profitTable table tr th:hover,
+.profitTable table tr td:hover {
+  opacity: 0.8;
+}
+
+.profitTable table tr th {
+  background: #002B72;
+}
+
+.profit {
+  background: #20c997;
+}
+
+.loss {
+  background: #dc3545;
+}
+
+.config {
+  position: relative;
+  bottom: 20px;
+  width: 100%;
+  padding: 15px 20px;
+  /* border: 1px solid; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.config div {
+  width: auto;
+  height: auto;
+  border-radius: 5px;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+  padding: 15px 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.config div button, .config div select {
+  position: relative;
+  width: 75px;
+  height: auto;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 5px;
+
+  cursor: pointer;
+  margin-right: 15px;
+}
+
+.config div button:hover{
+  opacity: 0.8;
+}
+
+.config div button:disabled{
+  opacity: 0.9;
+  cursor: not-allowed;
+} 
+
+.start{
+  background: #20c997;
+  color: #fff;
+}
+
+.stop{
+  background: #dc3545;
+  color: #fff;
+}
+
+
+.modal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100px !important;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+  background-color: #fff;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 300px;
+  border-radius: 5px;
+  position: relative;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+div.trend{
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  width: auto;
+  height: 50px;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+div.trend div.arrow-up, div.trend div.arrow-down, div.circle{
+  position: relative;
+  top: -5px;
+  width: auto;
+  padding: 5px;
+  font-size: 25px;
+  font-weight: 800;
+  box-shadow: none;
+}
+
+div.trend div.arrow-up{
+  color: #20c997;
+}
+
+div.trend div.arrow-down{
+  color: #dc3545;
+}
