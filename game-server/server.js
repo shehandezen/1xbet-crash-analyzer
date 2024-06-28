@@ -22,7 +22,12 @@ const config = {
         crashData: {},
         bets: {},
     },
-    MAWindowSize: 8,
+    MAWindowSize: 4,
+    simulate: {
+        enabled: true,
+        bet: false,
+        values: [0]
+    }
 }
 
 const oddsManager = (odds, newOdd) => {
@@ -220,6 +225,9 @@ wss.on('connection', async (ws) => {
             console.log(timestampLog, ' BET signal received!')
             console.log(timestampLog, `decision : bet = ${config.bet} , hold = ${config.hold}`)
             if (config.bet && !config.hold && config.run) {
+                if(config.simulate.enabled){
+                    config.simulate.bet = true
+                }
                 clients.forEach(function (client) {
                     client.send(JSON.stringify({ header: 'BET', data: { odd: config.predictedCrashPoint, stake: config.stake } }));
                 });
@@ -256,6 +264,14 @@ wss.on('connection', async (ws) => {
                                 client.send(JSON.stringify({ header: 'STREAM', data: rows[0] }));
                             });
                             await decisionMaker(config.ma, config.profit)
+                            if( config.simulate.bet){
+                                await config.simulate.values.push(ProfitLoss + parseInt(config.simulate.values[config.simulate.values.length - 1])) 
+                                console.log(config.simulate.values)
+                                config.simulate.bet = false
+                                clients.forEach(function (client) {
+                                    client.send(JSON.stringify({ header: 'SIMULATE', data: { values: config.simulate.values } }));
+                                });
+                            }
                             clients.forEach(function (client) {
                                 client.send(JSON.stringify({ header: 'DECISION', data: { bet: config.bet, hold: config.hold } }));
                             });

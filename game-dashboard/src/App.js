@@ -12,6 +12,7 @@ function App() {
   const [disabled, setDisabled] = useState(false)
   const [balance, setBalance] = useState(0)
   const [last, setLast] = useState([])
+  const [point, setPoint] = useState(0)
   const [series, setSeries] = useState([
     {
       name: 'Profit',
@@ -53,6 +54,7 @@ function App() {
         text: 'Profit'
       }
     },
+    
 
     dataLabels: {
       enabled: false
@@ -72,6 +74,39 @@ function App() {
         fontSize: '14px',
         fontFamily: 'Arial, sans-serif',
       }
+    },
+    chart: {
+      animations: {
+          enabled: true,
+          easing: 'easeinout',
+          speed: 800,
+          animateGradually: {
+              enabled: true,
+              delay: 150
+          },
+          dynamicAnimation: {
+              enabled: true,
+              speed: 350
+          }
+      }
+  }
+,  
+    annotations: {
+      yaxis: [
+        {
+          y: 0,
+          borderColor: '#00E396',
+          label: {
+            borderColor: '#00E396',
+            style: {
+              color: '#fff',
+              background: '#00E396'
+            },
+            text: 'Movement',
+           
+          }
+        }
+      ]
     }
   });
 
@@ -146,10 +181,27 @@ function App() {
           setOptions((pre) => ({
             ...pre, xaxis: {
               categories: dataArray?.data?.ids
-            }
+            },
+            // annotations:{
+            //   yaxis: [
+            //     {
+            //       y: parseInt(dataArray?.data?.values[dataArray?.data?.values.lenght - 1]),
+            //       borderColor: '#00E396',
+            //       label: {
+            //         borderColor: '#00E396',
+            //         style: {
+            //           color: '#fff',
+            //           background: '#00E396'
+            //         },
+            //         text: 'Movement',
+            //       }        
+            //     }
+            //   ]
+
+            // }
           }))
           setSeries((pre) => ([{ ...pre[0], data: dataArray?.data?.values }, { ...pre[1], data: dataArray?.data?.ma }]))
-          setLast(dataArray?.data?.last)
+          setLast(dataArray?.data?.last.reverse())
           setBot(dataArray?.data?.appStats)
           setDisabled(dataArray?.data?.appStats)
           setWindowSize(dataArray?.data?.windowSize)
@@ -163,6 +215,8 @@ function App() {
               categories: optionscopy
             }
           }))
+          setPoint(dataArray?.data?.value)
+
 
           let seriescopy = [...series[0].data]
           let seriescopyMA = [...series[1].data]
@@ -200,6 +254,11 @@ function App() {
               categories: dataArray?.data?.ids
             }
           }))
+        }
+
+        if (dataArray?.header == 'SIMULATE') {
+          setBetSeries((pre) => ([{ ...pre[0], data: dataArray?.data?.values }]))
+          
         }
 
         if (dataArray?.header == 'WEBSTATS') {
