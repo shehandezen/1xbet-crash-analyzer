@@ -22,12 +22,44 @@ const config = {
         crashData: {},
         bets: {},
     },
-    MAWindowSize: 4,
+    MAWindowSize: 25,
     simulate: {
         enabled: true,
         bet: false,
         values: [0]
+    },
+    profitMargin: 50,
+    lossMargin: 150,
+    upTurningPoints: [],
+    downTurningPoints: [],
+    rules:{
+        detectTrend: (DT1,DT2)=>{ return (DT1<DT2) },
+        detectLoss: (DT2,CP)=>{ return (DT2>CP)},
+        detectProfit: (UT2,CP)=>{ return (UT2>CP)},
+        stopLoss: (UT,margin,CP)=>{ return (CP <= (UT-margin))},
+        startProfit: (DT,margin,CP)=>{ return (CP >= (DT+margin))}
     }
+}
+
+const detectTurningPoints = (data, DTA, UTA) => {
+    if (data.length < 3) {
+        return []; // Not enough points to detect turning points
+    }
+
+    for (let i = 1; i < data.length - 1; i++) {
+        const prev = data[i - 1];
+        const curr = data[i];
+        const next = data[i + 1];
+
+        if ((curr > prev && curr > next)) {
+            UTA.push({index: i, value: data[i]});
+        }
+
+        if((curr < prev && curr < next)){
+            DTA.push({index: i, value: data[i]});
+        }
+    }
+
 }
 
 const oddsManager = (odds, newOdd) => {
@@ -53,10 +85,10 @@ const valueManager = (values, newValue) => {
 }
 
 const maManager = (ma, newMA) => {
-    if (ma.length <= 5) {
+    if (ma.length <= 50) {
         ma.push(newMA);
         return ma
-    } else if (ma.length > 5) {
+    } else if (ma.length > 50) {
         ma.push(newMA);
         ma.shift();
         return ma
@@ -98,28 +130,51 @@ const MA = (data, windowSize) => {
     return sma;
 }
 
-const decisionMaker = (ma, profits) => {
-    console.log(ma, profits)
-    if (ma[ma.length - 1] > ma[ma.length - 2]) {
-        // uptrend
-        console.log('up')
+const decisionMaker = async(ma, profits) => {
+    await detectTurningPoints(ma, config.downTurningPoints, config.upTurningPoints)
+    console.log(config.upTurningPoints, config.downTurningPoints)
+
+
+    if(config.rules.detectProfit(config.upTurningPoints[config.upTurningPoints.length - 1], ma[ma.length - 1])){
         config.bet = true
-    } else if (ma[ma.length - 1] < ma[ma.length - 2]) {
-        //downtrend
-        console.log('down')
+    }
+
+    if(config.rules.detectLoss(config.downTurningPoints[config.downTurningPoints.length - 1], ma[ma.length - 1])){
         config.bet = false
     }
 
-    console.log(parseInt(profits[profits.length - 1]) + parseInt(profits[profits.length - 2]))
-    if ((parseInt(profits[profits.length - 1]) + parseInt(profits[profits.length - 2])) <= config.stoploss) {
-        // hold
-        console.log('hold')
+    if(config.rules.detectTrend(config.downTurningPoints[config.downTurningPoints.length - 2], config.downTurningPoints[config.downTurningPoints.length - 1])){
+        config.bet = true
+    }else{
         config.bet = false
-        config.hold = true
-    } else {
-        config.hold = false
-
     }
+
+    if(config.rules.startProfit(config.downTurningPoints[config.downTurningPoints.length - 1],config.profitMargin,ma[ma.length - 1])){
+        config.bet = true
+    }
+
+    if(config.rules.stopLoss(config.upTurningPoints[config.upTurningPoints.length - 1], config.lossMargin, ma[ma.length - 1])){
+        config.bet = false
+    }
+
+
+
+    // if (ma[ma.length - 1] > ma[ma.length - 2]) {
+    //     // uptrend
+    //     config.bet = true
+    // } else if (ma[ma.length - 1] < ma[ma.length - 2]) {
+    //     //downtrend
+    //     config.bet = false
+    // }
+
+    // if ((parseInt(profits[profits.length - 1]) + parseInt(profits[profits.length - 2])) <= config.stoploss) {
+    //     // hold
+    //     config.bet = false
+    //     config.hold = true
+    // } else {
+    //     config.hold = false
+
+    // }
 
 }
 
