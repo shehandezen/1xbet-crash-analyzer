@@ -48,7 +48,7 @@ const predictCrashPoints = (recentPoints) => {
     const repeatingValues = findRepeatingValues(recentPoints);
     const alternatingPatterns = detectAlternatingPatterns(recentPoints);
     const prediction = [];
-        if (lowCrashes.length > highCrashes.length) {
+        if (lowCrashes.length >= highCrashes.length) {
             prediction.push(parseFloat((Math.random() * (2.5 - 1.0) + 1.0).toFixed(2)));
         } else  if (lowCrashes.length < highCrashes.length) {
             prediction.push(parseFloat((Math.random() * (10.0 - 2.5) + 2.5).toFixed(2)));

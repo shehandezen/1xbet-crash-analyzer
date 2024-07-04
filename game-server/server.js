@@ -31,13 +31,13 @@ const config = {
     profitMargin: 50,
     lossMargin: 50,
     upTurningPoints: [],
-    downTurningPoints: [],
+    downTurningPoints: [0],
     rules: {
         detectTrend: (DT1, DT2) => { return (DT1 < DT2) },
         detectLoss: (DT2, CP) => { return (DT2 > CP) },
         detectProfit: (UT2, CP) => { return (UT2 < CP) },
-        stopLoss: (UT, margin, CP) => { return (CP <= (UT - margin)) },
-        startProfit: (DT, margin, CP) => { return (CP >= (DT + margin)) }
+        stopLoss: (UT, margin, CP) => { return (CP <= (UT)) },
+        startProfit: (DT, margin, CP) => { return (CP >= (DT)) }
     }
 }
 
@@ -74,10 +74,10 @@ const detectTurningPoints = (data, DTA, UTA) => {
 }
 
 const oddsManager = (odds, newOdd) => {
-    if (odds.length <= 24) {
+    if (odds.length <= 5) {
         odds.push(newOdd);
         return { odds: odds, status: 'Pending' };
-    } else if (odds.length > 24) {
+    } else if (odds.length > 5) {
         odds.push(newOdd);
         odds.shift();
         return { odds: odds, status: 'Ready' };
@@ -119,7 +119,7 @@ const profitManager = (profit, newProfit) => {
 
 
 const predictionSetter = async (odds) => {
-    if (odds.length > 24) {
+    if (odds.length > 5) {
         let predict_point = await predictor(odds);
         return predict_point;
     }
@@ -144,47 +144,56 @@ const MA = (data, windowSize) => {
 const decisionMaker = async (ma, profits) => {
     await detectTurningPoints(ma, config.downTurningPoints, config.upTurningPoints)
     console.log(config.upTurningPoints, config.downTurningPoints)
+    // maCopy = await MA(config.values[], config.MAWindowSize)
+    // console.log(maCopy[maCopy.length - 1])
 
+    if(config.downTurningPoints.length > 0){
+        console.log(config.downTurningPoints[config.downTurningPoints.length - 1])
+
+    }
 
     if (config.rules.detectLoss(config.downTurningPoints[config.downTurningPoints.length - 1]?.value, ma[ma.length - 1])) {
         config.bet = false
         console.log('detect loss')
     }else
-        
-    if (config.rules.stopLoss(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, config.lossMargin, ma[ma.length - 1])) {
-        config.bet = false
-        console.log('stop loss')
-    }else
-
-    if (config.rules.startProfit(config.downTurningPoints[config.downTurningPoints.length - 1]?.value, config.profitMargin, ma[ma.length - 1])) {
-        config.bet = true
-        console.log('start profit')
-    }else
-
-
-
-    if (config.rules.detectProfit(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, ma[ma.length - 1])) {
-        config.bet = true
-        console.log('detect profit', config.rules.detectProfit(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, ma[ma.length - 1]))
-
-    }else
-
-    if (config.rules.detectTrend(config.downTurningPoints[config.downTurningPoints.length - 2]?.value, config.downTurningPoints[config.downTurningPoints.length - 1]?.value)) {
+    
+    if (config.rules.detectTrend(config.downTurningPoints[config.downTurningPoints.length - 2]?.value, config.downTurningPoints[config.downTurningPoints.length - 1]?.value) ||config.rules.detectProfit(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, ma[ma.length - 1]) ) {
         config.bet = true
         console.log('detect trend up')
-    } else
+      
+    } 
 
-    if (!config.rules.detectTrend(config.downTurningPoints[config.downTurningPoints.length - 2]?.value, config.downTurningPoints[config.downTurningPoints.length - 1]?.value))  {
-        config.bet = false
-        console.log('detect trend down')
-    }else
+    // if(config.upTurningPoints[config.upTurningPoints.length - 1]?.index  )
+
+    // if (config.rules.detectLoss(config.downTurningPoints[config.downTurningPoints.length - 1]?.value, ma[ma.length - 1])) {
+    //     config.bet = false
+    //     console.log('detect loss')
+    // }
+        
+  
+
+ 
+
+
+
+    // if (config.rules.detectProfit(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, ma[ma.length - 1])) {
+    //     config.bet = true
+    //     console.log('detect profit', config.rules.detectProfit(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, ma[ma.length - 1]))
+
+    // }else
+
+
+    // if (!config.rules.detectTrend(config.downTurningPoints[config.downTurningPoints.length - 2]?.value, config.downTurningPoints[config.downTurningPoints.length - 1]?.value))  {
+    //     config.bet = false
+    //     console.log('detect trend down')
+    // }else
 
   
 
-    if (config.rules.stopLoss(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, config.lossMargin, ma[ma.length - 1])) {
-        config.bet = false
-        console.log('stop loss')
-    }
+    // if (config.rules.stopLoss(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, config.lossMargin, ma[ma.length - 1])) {
+    //     config.bet = false
+    //     console.log('stop loss')
+    // }
 
 
 
