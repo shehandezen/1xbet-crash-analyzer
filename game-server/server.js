@@ -29,16 +29,20 @@ const config = {
         values: [0]
     },
     profitMargin: 50,
-    lossMargin: 50,
+    lossMargin: 100,
     upTurningPoints: [],
     downTurningPoints: [0],
     rules: {
         detectTrend: (DT1, DT2) => { return (DT1 < DT2) },
         detectLoss: (DT2, CP) => { return (DT2 > CP) },
         detectProfit: (UT2, CP) => { return (UT2 < CP) },
-        stopLoss: (UT, margin, CP) => { return (CP <= (UT)) },
-        startProfit: (DT, margin, CP) => { return (CP >= (DT)) }
-    }
+        stopLoss: (UT, margin, CP) => { return (CP <= (UT - margin)) },
+        startProfit: (DT, margin, CP) => { return (CP >= (DT)) },
+        secondDownProfit: (DT1, CP) => { return (CP >= (DT1)) },
+
+    },
+    testValues: [],
+    testBet: false
 }
 
 const detectTurningPoints = (data, DTA, UTA) => {
@@ -152,16 +156,26 @@ const decisionMaker = async (ma, profits) => {
 
     }
 
-    if (config.rules.detectLoss(config.downTurningPoints[config.downTurningPoints.length - 1]?.value, ma[ma.length - 1])) {
+    if (config.rules.detectLoss(config.downTurningPoints[config.downTurningPoints.length - 1]?.value, ma[ma.length - 1]) || ( config.rules.stopLoss(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, config.lossMargin, ma[ma.length - 1]) && config.upTurningPoints[config.upTurningPoints.length - 1]?.index > config.downTurningPoints[config.downTurningPoints.length - 1]?.index)) {
         config.bet = false
         console.log('detect loss')
     }else
     
-    if (config.rules.detectTrend(config.downTurningPoints[config.downTurningPoints.length - 2]?.value, config.downTurningPoints[config.downTurningPoints.length - 1]?.value) ||config.rules.detectProfit(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, ma[ma.length - 1]) ) {
+    // if (config.rules.detectTrend(config.downTurningPoints[config.downTurningPoints.length - 2]?.value, config.downTurningPoints[config.downTurningPoints.length - 1]?.value) ||config.rules.detectProfit(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, ma[ma.length - 1]) || (config.rules.secondDownProfit(config.downTurningPoints[config.downTurningPoints.length - 2 ]?.value,  ma[ma.length - 1]) && config.upTurningPoints[config.upTurningPoints.length - 1]?.index > config.downTurningPoints[config.downTurningPoints.length - 1]?.index)) {
+    //     config.bet = true
+    //     console.log('detect trend up')
+      
+    // } 
+
+    if (config.rules.detectTrend(config.downTurningPoints[config.downTurningPoints.length - 2]?.value, config.downTurningPoints[config.downTurningPoints.length - 1]?.value) ) {
         config.bet = true
         console.log('detect trend up')
       
-    } 
+    } else  if (!(config.rules.detectTrend(config.downTurningPoints[config.downTurningPoints.length - 2]?.value, config.downTurningPoints[config.downTurningPoints.length - 1]?.value))) {
+        config.bet = false
+        console.log('detect trend down')
+      
+    }
 
     // if(config.upTurningPoints[config.upTurningPoints.length - 1]?.index  )
 
@@ -326,6 +340,10 @@ wss.on('connection', async (ws) => {
                 });
             }
 
+            if((config.values[config.values.length - 1] - config.values[config.values.length - 2] ) > 0 ){
+                config.testBet = true
+            }
+
 
         } else if (decodedData?.header == 'DATA') {
             console.log(timestampLog, ' DATA signal received!')
@@ -364,6 +382,12 @@ wss.on('connection', async (ws) => {
                                 clients.forEach(function (client) {
                                     client.send(JSON.stringify({ header: 'SIMULATE', data: { values: config.simulate.values } }));
                                 });
+                            }
+
+                            if(config.testBet){
+                                await config.testValues.push(ProfitLoss + parseInt(config.testValues[config.testValues.length - 1]))
+                                config.testBet = false
+                                console.log(config.testValues, '<== test bets data')
                             }
                             clients.forEach(function (client) {
                                 client.send(JSON.stringify({ header: 'DECISION', data: { bet: config.bet, hold: config.hold } }));
