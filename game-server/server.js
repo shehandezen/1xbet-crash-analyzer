@@ -36,7 +36,7 @@ const config = {
         detectTrend: (DT1, DT2) => { return (DT1 < DT2) },
         detectLoss: (DT2, CP) => { return (DT2 > CP) },
         detectProfit: (UT2, CP) => { return (UT2 < CP) },
-        stopLoss: (UT, margin, CP) => { return (CP <= (UT - margin)) },
+        stopLoss: (UT, margin, CP) => { return (CP <= (UT)) },
         startProfit: (DT, margin, CP) => { return (CP >= (DT)) },
         secondDownProfit: (DT1, CP) => { return (CP >= (DT1)) },
 
@@ -156,16 +156,21 @@ const decisionMaker = async (ma, profits) => {
 
     }
 
-    if (config.rules.detectLoss(config.downTurningPoints[config.downTurningPoints.length - 1]?.value, ma[ma.length - 1]) || ( config.rules.stopLoss(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, config.lossMargin, ma[ma.length - 1]) && config.upTurningPoints[config.upTurningPoints.length - 1]?.index > config.downTurningPoints[config.downTurningPoints.length - 1]?.index)) {
-        config.bet = false
-        console.log('detect loss')
-    }else
+    // if (config.rules.detectLoss(config.downTurningPoints[config.downTurningPoints.length - 1]?.value, ma[ma.length - 1]) || ( config.rules.stopLoss(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, config.lossMargin, ma[ma.length - 1]) && config.upTurningPoints[config.upTurningPoints.length - 1]?.index > config.downTurningPoints[config.downTurningPoints.length - 1]?.index)) {
+    //     config.bet = false
+    //     console.log('detect loss')
+    // }else
     
     // if (config.rules.detectTrend(config.downTurningPoints[config.downTurningPoints.length - 2]?.value, config.downTurningPoints[config.downTurningPoints.length - 1]?.value) ||config.rules.detectProfit(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, ma[ma.length - 1]) || (config.rules.secondDownProfit(config.downTurningPoints[config.downTurningPoints.length - 2 ]?.value,  ma[ma.length - 1]) && config.upTurningPoints[config.upTurningPoints.length - 1]?.index > config.downTurningPoints[config.downTurningPoints.length - 1]?.index)) {
     //     config.bet = true
     //     console.log('detect trend up')
       
     // } 
+    
+    if (config.rules.stopLoss(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, config.lossMargin, ma[ma.length - 1])) {
+        config.bet = false
+        console.log('stop loss')
+    }else
 
     if (config.rules.detectTrend(config.downTurningPoints[config.downTurningPoints.length - 2]?.value, config.downTurningPoints[config.downTurningPoints.length - 1]?.value) ) {
         config.bet = true
