@@ -26,7 +26,8 @@ const config = {
     simulate: {
         enabled: true,
         bet: false,
-        values: [0]
+        values: [0],
+        ma:[]
     },
     profitMargin: 50,
     lossMargin: 100,
@@ -156,21 +157,16 @@ const decisionMaker = async (ma, profits) => {
 
     }
 
-    // if (config.rules.detectLoss(config.downTurningPoints[config.downTurningPoints.length - 1]?.value, ma[ma.length - 1]) || ( config.rules.stopLoss(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, config.lossMargin, ma[ma.length - 1]) && config.upTurningPoints[config.upTurningPoints.length - 1]?.index > config.downTurningPoints[config.downTurningPoints.length - 1]?.index)) {
-    //     config.bet = false
-    //     console.log('detect loss')
-    // }else
+    if (config.rules.detectLoss(config.downTurningPoints[config.downTurningPoints.length - 1]?.value, ma[ma.length - 1]) || ( config.rules.stopLoss(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, config.lossMargin, ma[ma.length - 1]) && config.upTurningPoints[config.upTurningPoints.length - 1]?.index > config.downTurningPoints[config.downTurningPoints.length - 1]?.index)) {
+        config.bet = false
+        console.log('detect loss')
+    }else
     
     // if (config.rules.detectTrend(config.downTurningPoints[config.downTurningPoints.length - 2]?.value, config.downTurningPoints[config.downTurningPoints.length - 1]?.value) ||config.rules.detectProfit(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, ma[ma.length - 1]) || (config.rules.secondDownProfit(config.downTurningPoints[config.downTurningPoints.length - 2 ]?.value,  ma[ma.length - 1]) && config.upTurningPoints[config.upTurningPoints.length - 1]?.index > config.downTurningPoints[config.downTurningPoints.length - 1]?.index)) {
     //     config.bet = true
     //     console.log('detect trend up')
       
     // } 
-    
-    if (config.rules.stopLoss(config.upTurningPoints[config.upTurningPoints.length - 1]?.value, config.lossMargin, ma[ma.length - 1])) {
-        config.bet = false
-        console.log('stop loss')
-    }else
 
     if (config.rules.detectTrend(config.downTurningPoints[config.downTurningPoints.length - 2]?.value, config.downTurningPoints[config.downTurningPoints.length - 1]?.value) ) {
         config.bet = true
@@ -382,10 +378,11 @@ wss.on('connection', async (ws) => {
                             await decisionMaker(config.ma, config.profit)
                             if (config.simulate.bet) {
                                 await config.simulate.values.push(ProfitLoss + parseInt(config.simulate.values[config.simulate.values.length - 1]))
+                               config.simulate.ma = await MA(config.simulate.values, 25)
                                 console.log(config.simulate.values)
                                 config.simulate.bet = false
                                 clients.forEach(function (client) {
-                                    client.send(JSON.stringify({ header: 'SIMULATE', data: { values: config.simulate.values } }));
+                                    client.send(JSON.stringify({ header: 'SIMULATE', data: { values: config.simulate.values, ma: config.simulate.ma } }));
                                 });
                             }
 

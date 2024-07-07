@@ -31,6 +31,11 @@ function App() {
       name: 'Profit - Betted',
       type: 'area',
       data: []
+    },
+    {
+      name: 'Profit - Betted - MA',
+      type: 'line',
+      data: []
     }
   ]);
 
@@ -248,7 +253,7 @@ function App() {
         }
 
         if (dataArray?.header == 'BETS') {
-          setBetSeries((pre) => ([{ ...pre[0], data: dataArray?.data?.profit }]))
+          setBetSeries((pre) => ([{ ...pre[0], data: dataArray?.data?.profit }, { ...pre[1]}]))
           setBetOptions((pre) => ({
             ...pre, xaxis: {
               categories: dataArray?.data?.ids
@@ -257,7 +262,8 @@ function App() {
         }
 
         if (dataArray?.header == 'SIMULATE') {
-          setBetSeries((pre) => ([{ ...pre[0], data: dataArray?.data?.values }]))
+          setBetSeries((pre) => ([{ ...pre[0], data: dataArray?.data?.values }, { ...pre[1], data: dataArray?.data?.ma }]))
+          
           
         }
 
