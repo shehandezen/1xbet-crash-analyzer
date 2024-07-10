@@ -13,6 +13,7 @@ const config = {
     predictedCrashPoint: 0,
     backupCrashPoint: 0,
     stake: 100,
+    crash: 5,
     stoploss: -200,
     odds: [],
     values: [],
@@ -331,27 +332,27 @@ wss.on('connection', async (ws) => {
 
         } else if (decodedData?.header == 'BET') {
             console.log(timestampLog, ' BET signal received!')
-            console.log(timestampLog, `decision : bet = ${config.bet} , hold = ${config.hold}`)
-            if (config.bet && !config.hold && config.run) {
-                if (config.simulate.enabled) {
-                    config.simulate.bet = true
-                }
-                clients.forEach(function (client) {
-                    client.send(JSON.stringify({ header: 'BET', data: { odd: config.predictedCrashPoint, stake: config.stake } }));
-                });
-            }
+            // console.log(timestampLog, `decision : bet = ${config.bet} , hold = ${config.hold}`)
+            // if (config.bet && !config.hold && config.run) {
+            //     if (config.simulate.enabled) {
+            //         config.simulate.bet = true
+            //     }
+            //     clients.forEach(function (client) {
+            //         client.send(JSON.stringify({ header: 'BET', data: { odd: config.predictedCrashPoint, stake: config.stake } }));
+            //     });
+            // }
 
-            if((config.values[config.values.length - 1] - config.values[config.values.length - 2] ) > 0 ){
-                config.testBet = true
-            }
+            // if((config.values[config.values.length - 1] - config.values[config.values.length - 2] ) > 0 ){
+            //     config.testBet = true
+            // }
 
 
         } else if (decodedData?.header == 'DATA') {
             console.log(timestampLog, ' DATA signal received!')
-            if (config.predictedCrashPoint != undefined && config.backupCrashPoint != undefined) {
+            // if (config.predictedCrashPoint != undefined && config.backupCrashPoint != undefined) {
                 (async () => {
-                    let type = (parseFloat(decodedData?.data?.odd) > parseFloat(config.backupCrashPoint) ? 'Profit' : 'Loss')
-                    let ProfitLoss = (type == 'Profit' ? ((parseFloat(config.backupCrashPoint) - 1) * config.stake) : config.stake * (-1))
+                    let type = (parseFloat(decodedData?.data?.odd) > parseFloat(config.crash) ? 'Profit' : 'Loss')
+                    let ProfitLoss = (type == 'Profit' ? ((parseFloat(config.crash) - 1) * config.stake) : config.stake * (-1))
                     let value = ProfitLoss + config.lastRecords.crashData?.value
                     let { values, status } = valueManager(config.values, value)
                     let ma = null;
@@ -362,7 +363,7 @@ wss.on('connection', async (ws) => {
                     }
 
                     let query = `INSERT INTO crash_data( timestamp, crash_point, predict_crash_point, type, profit_loss, value, ma) VALUES(?,?,?,?,?,?,?)`
-                    let params = [decodedData?.data?.end, decodedData?.data?.odd, config.backupCrashPoint, type, ProfitLoss, value, ma ? ma[ma.length - 1] : null]
+                    let params = [decodedData?.data?.end, decodedData?.data?.odd, config.crash, type, ProfitLoss, value, ma ? ma[ma.length - 1] : null]
 
                     db.run(query, params, async (err) => {
                         if (err) throw console.log(err?.message)
@@ -375,52 +376,52 @@ wss.on('connection', async (ws) => {
                             clients.forEach(function (client) {
                                 client.send(JSON.stringify({ header: 'STREAM', data: rows[0] }));
                             });
-                            await decisionMaker(config.ma, config.profit)
-                            if (config.simulate.bet) {
-                                await config.simulate.values.push(ProfitLoss + parseInt(config.simulate.values[config.simulate.values.length - 1]))
-                               config.simulate.ma = await MA(config.simulate.values, 25)
-                                console.log(config.simulate.values)
-                                config.simulate.bet = false
-                                clients.forEach(function (client) {
-                                    client.send(JSON.stringify({ header: 'SIMULATE', data: { values: config.simulate.values, ma: config.simulate.ma } }));
-                                });
-                            }
+                            // await decisionMaker(config.ma, config.profit)
+                            // if (config.simulate.bet) {
+                            //     await config.simulate.values.push(ProfitLoss + parseInt(config.simulate.values[config.simulate.values.length - 1]))
+                            //    config.simulate.ma = await MA(config.simulate.values, 25)
+                            //     console.log(config.simulate.values)
+                            //     config.simulate.bet = false
+                            //     clients.forEach(function (client) {
+                            //         client.send(JSON.stringify({ header: 'SIMULATE', data: { values: config.simulate.values, ma: config.simulate.ma } }));
+                            //     });
+                            // }
 
-                            if(config.testBet){
-                                await config.testValues.push(ProfitLoss + parseInt(config.testValues[config.testValues.length - 1]))
-                                config.testBet = false
-                                console.log(config.testValues, '<== test bets data')
-                            }
-                            clients.forEach(function (client) {
-                                client.send(JSON.stringify({ header: 'DECISION', data: { bet: config.bet, hold: config.hold } }));
-                            });
+                            // if(config.testBet){
+                            //     await config.testValues.push(ProfitLoss + parseInt(config.testValues[config.testValues.length - 1]))
+                            //     config.testBet = false
+                            //     console.log(config.testValues, '<== test bets data')
+                            // }
+                            // clients.forEach(function (client) {
+                            //     client.send(JSON.stringify({ header: 'DECISION', data: { bet: config.bet, hold: config.hold } }));
+                            // });
                         })
                     })
                 })()
-            }
+            // }
         } else if (decodedData?.header == 'CRASH') {
             console.log(timestampLog, ' CRASH signal received!')
             clients.forEach(function (client) {
                 client.send(JSON.stringify(decodedData));
             });
-            (async () => {
-                const { odds, status } = await oddsManager(
-                    config.odds,
-                    parseFloat(decodedData?.data?.odd)
-                );
-                console.log(timestampLog, "odds data", odds, status);
-                const predictPoint = predictionSetter(config.odds).then((point) => {
-                    console.log(
-                        timestampLog,
-                        "predict point : ",
-                        point
-                    );
-                    config.backupCrashPoint = config.predictedCrashPoint
-                    config.predictedCrashPoint = point
-                });
+            // (async () => {
+            //     const { odds, status } = await oddsManager(
+            //         config.odds,
+            //         parseFloat(decodedData?.data?.odd)
+            //     );
+            //     console.log(timestampLog, "odds data", odds, status);
+            //     const predictPoint = predictionSetter(config.odds).then((point) => {
+            //         console.log(
+            //             timestampLog,
+            //             "predict point : ",
+            //             point
+            //         );
+            //         config.backupCrashPoint = config.predictedCrashPoint
+            //         config.predictedCrashPoint = point
+            //     });
 
-                await predictPoint
-            })()
+            //     await predictPoint
+            // })()
 
         } else if (decodedData?.header == 'RESULT') {
             console.log(timestampLog, ' RESULT signal received!')
