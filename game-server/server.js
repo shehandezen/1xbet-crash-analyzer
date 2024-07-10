@@ -348,7 +348,7 @@ wss.on('connection', async (ws) => {
 
 
         } else if (decodedData?.header == 'DATA') {
-            console.log(timestampLog, ' DATA signal received!')
+            console.log(timestampLog, ' DATA signal received!');
             // if (config.predictedCrashPoint != undefined && config.backupCrashPoint != undefined) {
                 (async () => {
                     let type = (parseFloat(decodedData?.data?.odd) > parseFloat(config.crash) ? 'Profit' : 'Loss')
