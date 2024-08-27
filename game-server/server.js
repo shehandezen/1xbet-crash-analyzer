@@ -1,15 +1,39 @@
 const WebSocket = require("ws");
 const db = require("./database.js");
 const predictor = require("./predictor.js");
+const express = require('express')
 require("dotenv").config()
 
 const wss = new WebSocket.Server({ port: 5000 });
+const app = express()
+app.get('/timeData', (req,res)=>{
+    res.json({
+        data: config.timeData
+    })
+})
+
+app.listen(5555,()=>{
+    console.log('server running on port 5555')
+})
 const clients = []
 const config = {
     run: false,
     bet: false,
     hold: false,
     clientConnection: false,
+    lastTime: 0,
+    hourdown: [],
+    hourup:[],
+    timeup:[],
+    timedown:[],
+    hourProfit:[0],
+    timeBet:false,
+    timeProfit:[{x:0 , data:[0]}],
+    timeData: [{ x:0, y: [0, 0, 0, 0] }],
+    hourData:[0],
+    MainProfit:[0],
+    lossLimit: -400,
+    profitLimit:0,
     predictedCrashPoint: 0,
     backupCrashPoint: 0,
     stake: 100,
@@ -19,7 +43,9 @@ const config = {
     lastOdd: 1,
     values: [],
     ma: [],
+    mixed:[0],
     profit: [],
+    testBet0: false,
     lastRecords: {
         crashData: {},
         bets: {},
@@ -30,7 +56,9 @@ const config = {
         enabled: true,
         bet: false,
         values: [0],
-        ma: []
+        ma: [],
+         upTurningPoints: [],
+        downTurningPoints: [0],
     },
     highProfit: {
         enabled: true,
@@ -43,22 +71,23 @@ const config = {
     profitMargin: 50,
     lossMargin: 100,
     upTurningPoints: [],
-    downTurningPoints: [0],
+    downTurningPoints: [],
     rules: {
         detectTrend: (DT1, DT2) => { return (DT1 < DT2) },
         detectLoss: (DT2, CP) => { return (DT2 > CP) },
         detectProfit: (UT2, CP) => { return (UT2 < CP) },
         stopLoss: (UT, margin, CP) => { return (CP <= (UT)) },
         startProfit: (DT, margin, CP) => { return (CP >= (DT)) },
-        secondDownProfit: (DT1, CP) => { return (CP >= (DT1)) },
+        secondDownProfit: (DT1, DT2, CP) => { return ( (CP > (DT1)) && (CP >= DT2)) },
 
         /// new rules
 
         goingUpOrDown: (upPoint, downPoint, currentPoint) => { return (upPoint?.index > downPoint?.index) && (currentPoint > downPoint?.value) }
 
     },
-    testValues: [],
-    testBet: false
+    testValues: [0],
+    testBet: false,
+    bets:[0]
 }
 
 const detectTurningPoints = (data, DTA, UTA) => {
@@ -92,6 +121,103 @@ const detectTurningPoints = (data, DTA, UTA) => {
 
 
 }
+
+const detectTurningPointsTime = (data, DTA, UTA) => {
+    if (data.length < 3) {
+        return []; // Not enough points to detect turning points
+    }
+
+    let uArr = []
+    let dArr = [];
+
+    (async () => {
+        for (let i = 1; i < data.length - 1; i++) {
+            const prev = data[i - 1];
+            const curr = data[i];
+            const next = data[i + 1];
+
+            if ((curr > prev && curr > next)) {
+                uArr.push({ index: i, value: data[i] });
+            }
+
+            if ((curr < prev && curr < next)) {
+                dArr.push({ index: i, value: data[i] });
+            }
+        }
+
+    }
+    )()
+
+    config.timeup = uArr
+    config.timedown = dArr
+
+
+}
+
+const detectTurningPointsTest = (data, DTA, UTA) => {
+    if (data.length < 3) {
+        return []; // Not enough points to detect turning points
+    }
+
+    let uArr = []
+    let dArr = [];
+
+    (async () => {
+        for (let i = 1; i < data.length - 1; i++) {
+            const prev = data[i - 1];
+            const curr = data[i];
+            const next = data[i + 1];
+
+            if ((curr > prev && curr > next)) {
+                uArr.push({ index: i, value: data[i] });
+            }
+
+            if ((curr < prev && curr < next)) {
+                dArr.push({ index: i, value: data[i] });
+            }
+        }
+
+    }
+    )()
+
+    config.simulate.upTurningPoints = uArr
+    config.simulate.downTurningPoints = dArr
+
+
+}
+
+const detectTurningPointsHour = (data, DTA, UTA) => {
+    if (data.length < 3) {
+        return []; // Not enough points to detect turning points
+    }
+
+    let uArr = []
+    let dArr = [];
+
+    (async () => {
+        for (let i = 1; i < data.length - 1; i++) {
+            const prev = data[i - 1];
+            const curr = data[i];
+            const next = data[i + 1];
+
+            if ((curr > prev && curr > next)) {
+                uArr.push({ index: i, value: data[i] });
+            }
+
+            if ((curr < prev && curr < next)) {
+                dArr.push({ index: i, value: data[i] });
+            }
+        }
+
+    }
+    )()
+
+    config.hourup = uArr
+    config.hourdown = dArr
+
+
+}
+
 
 const detectTurningPointsHighProfit = (data, DTA, UTA) => {
     if (data.length < 3) {
@@ -193,9 +319,118 @@ const MA = (data, windowSize) => {
     return sma;
 }
 
+
+const timeDataCollector = async(value)=>{
+    await detectTurningPointsHour(config.hourProfit, config.hourup,config.hourdown)
+    await detectTurningPointsTime(config.hourData, config.timeup,config.timedown)
+
+    if(config.lastTime == 0 && config.lastRecords.crashData?.timestamp != undefined){
+        config.lastTime = config.lastRecords.crashData?.timestamp
+    }
+
+    if(!(config.lastTime == 0 ) && ((parseInt(config.lastRecords.crashData?.timestamp) - parseInt(config.lastTime)) > (1000*60*60) )){
+        let record = {  x: (config.timeData.length + 1 ),  y : [0, Math.max(...config.hourData), Math.min(...config.hourData), config.hourData[config.hourData.length - 1]]}
+         await config.timeData.push(record)
+         console.log('time analysis: ', config.lastTime, record, (parseInt(config.lastRecords.crashData?.timestamp) - parseInt(config.lastTime)), (parseInt(config.lastRecords.crashData?.timestamp)))
+
+         config.hourData = [0]
+         config.lastTime = config.lastRecords.crashData?.timestamp
+
+         let profitRecord = { x: (config.timeData.length-1), data: config.hourProfit}
+         await config.timeProfit.push(profitRecord)
+         await config.MainProfit.push(config.MainProfit[config.MainProfit.length - 1] + config.hourProfit[config.hourProfit.length - 1])
+
+        //  console.log('Hourly profit: ', config.timeProfit[config.timeProfit.length - 1], config.MainProfit[config.MainProfit.length - 1])
+
+         config.hourProfit = [0]
+         config.hourup = []
+         config.hourdown = []
+         config.timeup = []
+         config.timedown = []
+        config.hold = false
+
+        //  if(config.MainProfit[config.MainProfit.length - 1]  < 0 ){
+        //     // config.loss = Math.abs(config.MainProfit[config.MainProfit.length - 1])
+        //     config.loss = 0
+
+        //  }else{
+        //     config.loss = 0
+        //  }
+    }
+
+
+    // if(config.hourProfit[config.hourProfit.length -1]  > 1000 || 
+    //     ((config.hourup.length >= 1 || config.hourdown.length >= 1) && (config.hourProfit[config.hourProfit.length -1] <= 0))
+    // ){
+    //     config.hold = true
+    // }else{
+    //     config.hold = false
+    // }
+
+    // // console.log('settle point', config.hourProfit[config.hourProfit.length -1],  ((config.hourup.length >= 1 || config.hourdown.length >= 1) && (config.hourProfit[config.hourProfit.length -1] <= 0)))
+    // // console.log('hour profit : ', config.hourProfit)
+
+    // if ((config.lastOdd >= 5) && !(config.odds[config.odds?.length - 2] >= 5)) {
+    //     if((config.hourData[config.hourData.length - 1] > 0)  && 
+    //     !((config.hourData[config.hourData.length -1] - config.hourData[config.hourData.length -2]) == 400)
+    // ){
+    //         config.timeBet = true 
+    //     console.log('Profit bet setted True!')
+
+    //     }else{
+    //         config.timeBet = false
+    //     console.log('Profit bet setted False!')
+
+    //     }
+    // }
+
+    console.log(' Latest profit : ',config.hourProfit[config.hourProfit.length - 1] )
+    console.log(' Turning point set @ up: ', config.hourup.length, ' down: ', config.hourdown.length)
+    console.log(' Turning point set @ up: ', config.timeup.length, ' down: ', config.timedown.length)
+    console.log(' Latest bet : ',config.hourData[config.hourData.length - 1] )
+    console.log(' conditions : ', !(config.hold),  (config.hourProfit[config.hourProfit.length - 1] >= 400), ((config.hourup.length >= 1 || config.hourdown.length >= 1) && (config.hourProfit[config.hourProfit.length -1] <= 0)), ( (config.hourProfit[config.hourProfit.length - 1] >= 400) || ((config.hourup.length >= 1 || config.hourdown.length >= 1) && (config.hourProfit[config.hourProfit.length -1] <= 0)) ))
+
+
+  if(!config.hold) { 
+    if(( (config.hourProfit[config.hourProfit.length - 1] > config.profitLimit) ||
+    (config.hourProfit[config.hourProfit.length - 1] <= config.lossLimit) ||
+        ((config.hourup.length >= 1 || config.hourdown.length >= 1) && (config.hourProfit[config.hourProfit.length -1] == 0)) )
+        ){
+        config.hold = true
+        console.log('Bet holding...')
+    }
+    }
+ 
+
+
+    if ((config.lastOdd >= 5) && !(config.odds[config.odds?.length - 2] >= 5)) {
+        if((config.hourData[config.hourData.length - 1] > 0) || ((config.timedown.length >= 1) && config.hourData[config.hourData.length - 1] >= 0 )){
+            if((config.timedown.length >= 1)) {
+                if(config.timedown[config.timedown.length - 1] > 0){
+                    config.timeBet = true 
+                    console.log('moving up with positive downing point')
+                }else{
+                    config.timeBet = false 
+                    console.log('moving up with negative downing point')
+                }
+            }else{
+                config.timeBet = true 
+                console.log('moving up without downing point')
+            }
+            
+        }else{
+            config.timeBet = false
+            console.log('moving down')
+        }
+    }
+
+  
+}
+
+
 const highProfit = async (value) => {
     await detectTurningPointsHighProfit(config.simulate.values, config.highProfit.downTurningPoints, config.highProfit.upTurningPoints)
-    console.log('down turn point', config.highProfit.downTurningPoints[config.highProfit.downTurningPoints?.length - 1]?.value,value, config.rules.goingUpOrDown(config.highProfit.downTurningPoints[config.highProfit.downTurningPoints?.length - 1], config.highProfit.upTurningPoints[config.highProfit.upTurningPoints?.length - 1], value))
+    // console.log('down turn point', config.highProfit.downTurningPoints[config.highProfit.downTurningPoints?.length - 1]?.value,value, config.rules.goingUpOrDown(config.highProfit.downTurningPoints[config.highProfit.downTurningPoints?.length - 1], config.highProfit.upTurningPoints[config.highProfit.upTurningPoints?.length - 1], value))
     if (config.rules.goingUpOrDown(config.highProfit.downTurningPoints[config.highProfit.downTurningPoints?.length - 1], config.highProfit.upTurningPoints[config.highProfit.upTurningPoints?.length - 1], value)) {
         // await highProfit?.push(highProfit[highProfit?.length -1] + )
         config.highProfit.bet = true
@@ -216,33 +451,68 @@ const oddshifter = async (value) => {
     //     console.log('odd is shifted to 1.5x')
     // } else  
     await detectTurningPoints(config.dataArray, config.downTurningPoints, config.upTurningPoints)
+    await detectTurningPointsTest(config.simulate.values, config.simulate.downTurningPoints, config.simulate.upTurningPoints)
+
     // console.log(config.upTurningPoints, config.downTurningPoints)
     // console.log(config.dataArray, 'data array')
-    console.log(config.simulate.values)
+    // console.log(config.simulate.values)
 
     if ((config.lastOdd >= 5) && !(config.odds[config.odds?.length - 2] >= 5)) {
         config.crash = 5
-        console.log('odd is shifted to 5x')
-        console.log(config.upTurningPoints[config.upTurningPoints?.length - 1]?.value - config.dataArray[config.dataArray.length - 1], value)
+        // console.log('odd is shifted to 5x')
+        // console.log(config.upTurningPoints[config.upTurningPoints?.length - 1]?.value - config.dataArray[config.dataArray.length - 1], value)
         // if (config.simulate.bet) {
         //     config.simulate.values.push((config.simulate.values[config.simulate.values.length - 1] + value))
 
         // }
         if (((config.downTurningPoints[config.downTurningPoints.length - 1]?.index < config.upTurningPoints[config.upTurningPoints.length - 1]?.index) && (config.dataArray.length > 4) && ((config.upTurningPoints[config.upTurningPoints?.length - 1]?.value - config.dataArray[config.dataArray.length - 1]) >= 400))) {
-            console.log('detect loss')
+            // console.log('detect loss')
             config.simulate.bet = false
 
         } else {
             // config.simulate.values.push((config.simulate.values[config.simulate.values.length-1] + value))
             config.simulate.bet = true
-            console.log('up trend bet')
-            console.log('value', value)
+            // console.log('up trend bet')
+            // console.log('value', value)
             // config.simulate.values.push((config.simulate.values[config.simulate.values.length - 1] + value))
 
+
+
         }
+
+        if( (config.downTurningPoints.length > 2) && (config.downTurningPoints[config.downTurningPoints.length - 2]?.value < config.downTurningPoints[config.downTurningPoints.length - 1]?.value) && config.rules.secondDownProfit(config.downTurningPoints[config.downTurningPoints.length - 2]?.value, config.downTurningPoints[config.downTurningPoints.length - 1]?.value, config.simulate.values[config.simulate.values.length - 1])){
+            config.testBet0 = true
+            // console.log('Stratergy active0 : ', config.downTurningPoints[config.downTurningPoints.length - 2]?.value , config.downTurningPoints[config.downTurningPoints.length - 1]?.value,config.simulate.values[config.simulate.values.length - 1] )
+            
+        }else{
+            config.testBet0 = false
+            // console.log('Stratergy Deactive0')
+
+        }
+
+
+ if( (config.downTurningPoints.length > 2) && (config.downTurningPoints[config.downTurningPoints.length - 2]?.value < config.downTurningPoints[config.downTurningPoints.length - 1]?.value) && config.rules.secondDownProfit(config.downTurningPoints[config.downTurningPoints.length - 2]?.value, config.downTurningPoints[config.downTurningPoints.length - 1]?.value, config.dataArray[config.dataArray.length - 1])){
+            config.testBet = true
+            // console.log('Stratergy active : ', config.downTurningPoints[config.downTurningPoints.length - 2]?.value , config.downTurningPoints[config.downTurningPoints.length - 1]?.value,config.simulate.values[config.simulate.values.length - 1] )
+            
+        }else{
+            config.testBet = false
+            // console.log('Stratergy Deactive')
+
+        }
+
+
+
+        if(((Math.max(config.testValues) - config.testValues[config.testValues.length - 1]) >= 1000)){
+            // config.hold = true
+            // console.log('Exceeded the loss limit')
+        }else{
+            // config.hold = false
+        }
+
     } else {
         config.crash = 1
-        console.log('odd is shifted to 1x')
+        // console.log('odd is shifted to 1x')
     }
 
     // if ((config.lastOdd >= 5) && !(config.odds[config.odds?.length - 2] >= 5)) {
@@ -402,10 +672,10 @@ wss.on('connection', async (ws) => {
         }
 
         let ma = MA(values, config.MAWindowSize)
-        console.log(ma);
+        // console.log(ma);
 
         clients.forEach(function (client) {
-            client.send(JSON.stringify({ header: 'ALL', data: { all: rows, ids: ids, crashPoints: crashPoints, predictions: predictions, values: values, last: last, appStats: config.run, ma: ma, windowSize: config.MAWindowSize } }));
+            client.send(JSON.stringify({ header: 'ALL', data: { all: rows, ids: ids, crashPoints: crashPoints, predictions: predictions, values: values, last: last, appStats: config.run, ma: ma, windowSize: config.MAWindowSize, timeData: config.timeData } }));
         });
         let query = 'SELECT * FROM bets LIMIT 200 OFFSET (SELECT count(*) FROM bets)-200'
         db.all(query, async (err, rows) => {
@@ -417,8 +687,13 @@ wss.on('connection', async (ws) => {
                 ids.push(i.id)
             }
             clients.forEach(function (client) {
-                client.send(JSON.stringify({ header: 'BETS', data: { all: rows, profit: profit, ids: ids, betted: config.simulate.values, highProfit: config.highProfit.values } }));
+                client.send(JSON.stringify({ header: 'BETS', data: { all: rows,mixed: config.mixed, profit: config.MainProfit, ids: ids, betted: config.simulate.values, highProfit: config.testValues, bets: config.bets } }));
             });
+
+            clients.forEach(function (client) {
+                client.send(JSON.stringify({ header: 'CANDLE', data: { values: config.timeData, profit: config.timeProfit, mainprofit: config.MainProfit } }));
+            });
+
         })
     })
 
@@ -434,13 +709,12 @@ wss.on('connection', async (ws) => {
     // websocket incomming messages
     ws.on('message', async (data) => {
         //message format : {header: 'HEADER', data: []/{} }
-        var timestampLog = "[" + Date.now() + "] ";
+       try{ var timestampLog = "[" + Date.now() + "] ";
         let decodedData = JSON.parse(data?.toString())
         if (decodedData.header != 'WEBSTATS') {
             console.log(timestampLog, 'Incoming data : ', decodedData)
 
         }
-
         if (decodedData?.header == 'START') {
             config.run = true
             console.log(timestampLog, ' START signal received!')
@@ -457,11 +731,14 @@ wss.on('connection', async (ws) => {
 
         } else if (decodedData?.header == 'BET') {
             console.log(timestampLog, ' BET signal received!')
-            if ((config.lastOdd >= 5) && !(config.odds[config.odds?.length - 2] >= 5)) {
-                if (config.simulate.bet) {
-
-                }
+            if(config.timeBet && !config.hold){
+              
+               clients.forEach(function (client) {
+                client.send(JSON.stringify({ header: 'BET', data: { odd: config.crash, stake: config.stake } }));
+                 });
             }
+
+
             // console.log(timestampLog, `decision : bet = ${config.bet} , hold = ${config.hold}`)
             // if (config.bet && !config.hold && config.run) {
             //     if (config.simulate.enabled) {
@@ -477,9 +754,11 @@ wss.on('connection', async (ws) => {
             // }
 
 
-        } else if (decodedData?.header == 'DATA') {
+        } else if(decodedData?.header == 'test'){
+
+        }else if (decodedData?.header == 'DATA') {
             console.log(timestampLog, ' DATA signal received!');
-            // if (config.predictedCrashPoint != undefined && config.backupCrashPoint != undefined) {
+            if (config.predictedCrashPoint != undefined && config.backupCrashPoint != undefined) {
             (async () => {
                 let type = (parseFloat(decodedData?.data?.odd) > parseFloat(config.crash) ? 'Profit' : 'Loss')
                 let ProfitLoss = (type == 'Profit' ? ((parseFloat(config.crash) - 1) * config.stake) : config.stake * (-1))
@@ -488,27 +767,58 @@ wss.on('connection', async (ws) => {
                 let ma = null;
                 if (!(config.dataArray[config.dataArray?.length - 1] == value)) {
                     await config.dataArray.push(value)
+
                 }
+
+                config.hourData.push(config.hourData[config.hourData.length - 1] + ProfitLoss)
 
                 if (status == 'Ready') {
                     ma = await MA(values, config.MAWindowSize)
 
                 }
-                console.log(decodedData?.data?.odd, config.odds[config.odds?.length - 2])
+                // console.log(decodedData?.data?.odd, config.odds[config.odds?.length - 2])
 
                 if (config.simulate.bet) {
                     await config.simulate.values.push((config.simulate.values[config.simulate.values.length - 1] + ProfitLoss))
-                    config.simulate.bet = false
-                    if (config.highProfit.bet) {
-                        console.log('High profit Active')
-                        await config.highProfit.values.push((config.highProfit.values[config.highProfit.values.length - 1] + ProfitLoss))
+                }
+                //     config.simulate.bet = false
+                //     if(!config.hold){
+                //         await config.bets.push(config.bets[config.bets.length - 1] + ProfitLoss)
+                //     }
+                //     // if (config.highProfit.bet) {
+                //     //     console.log('High profit Active')
+                //     //     await config.highProfit.values.push((config.highProfit.values[config.highProfit.values.length - 1] + ProfitLoss))
+                //     // }
+
+                // }
+
+                // if(config.testBet0){
+                //     await config.mixed.push((config.mixed[config.mixed.length - 1] + ProfitLoss))
+                //     config.testBet0 = false
+                // }
+
+                // if(config.testBet){
+                //     await config.testValues.push(config.testValues[config.testValues.length-1]+ ProfitLoss)
+                //     config.testBet = false
+                // }
+
+                //     console.log('time bet 5x')
+                    if(config.timeBet && !config.hold){
+                        config.hourProfit.push(config.hourProfit[config.hourProfit.length - 1] + ProfitLoss)
+                        config.timeBet = false
+                    }
+         
+                    if(config.hold){
+                        clients.forEach(function (client) {
+                            client.send(JSON.stringify({ header: 'HOLD', data: { status: 'Bet stopped' } }));
+                        });
+            
                     }
 
-                }
+                // console.log('Current Profits: ', config.simulate.values[config.simulate.values?.length - 1],config.testValues[config.testValues.length - 1], config.mixed[config.mixed.length-1])
+                // console.log('High profit : ', config.highProfit.values)
+                // console.log('New profit : ', config.testValues)
 
-
-                console.log('Current Profits: ', config.simulate.values[config.simulate.values?.length - 1], config.highProfit.values[config.highProfit.values?.length - 1])
-                console.log('High profit : ', config.highProfit.values)
 
 
 
@@ -520,12 +830,13 @@ wss.on('connection', async (ws) => {
                     let query = 'SELECT * FROM crash_data ORDER BY ID DESC LIMIT 1'
                     db.all(query, async (err, rows) => {
                         if (err) throw console.log(err?.message)
+                         await timeDataCollector(rows[0]?.profit_loss)   
                         config.lastRecords.crashData = rows[0]
                         await maManager(config.ma, rows[0]?.ma)
                         console.log(rows[0]?.profit_loss, 'profit loss value', config.simulate.bet, (config.lastOdd >= 5), !(config.odds[config.odds?.length - 2] >= 5))
                         await profitManager(config.profit, rows[0]?.profit_loss)
                         await oddshifter(parseInt(rows[0]?.profit_loss))
-                        await highProfit(parseInt(config.simulate.values[config.simulate.values?.length - 1]))
+                        // await highProfit(parseInt(config.simulate.values[config.simulate.values?.length - 1]))
                         clients.forEach(function (client) {
                             client.send(JSON.stringify({ header: 'STREAM', data: rows[0] }));
                         });
@@ -550,8 +861,10 @@ wss.on('connection', async (ws) => {
                         // });
                     })
                 })
-            })()
-            // }
+            
+            
+             } )()
+            }
         } else if (decodedData?.header == 'CRASH') {
             console.log(timestampLog, ' CRASH signal received!')
             config.lastOdd = parseFloat(decodedData?.data?.odd)
@@ -583,6 +896,7 @@ wss.on('connection', async (ws) => {
 
         } else if (decodedData?.header == 'RESULT') {
             console.log(timestampLog, ' RESULT signal received!')
+            if(decodedData.data?.odd && decodedData.data?.crash){
             let query = `INSERT INTO bets( date, time, round_id, bet, win, crash_point, acual_crash_point, value) VALUES()`
             let params = [decodedData.data?.date, decodedData.data?.time, decodedData.data?.roundID, decodedData.data?.bet, decodedData.data?.win, decodedData.data?.odd, decodedData.data?.crash, parseInt(decodedData.data?.odd) == 0 ? (parseInt(config.lastRecords.bets.value) - 100) : (parseInt(config.lastRecords.bets.value) + (parseInt(decodedData.data?.win) - config.stake))]
             db.run(query, params, async (err) => {
@@ -606,7 +920,7 @@ wss.on('connection', async (ws) => {
                     })
                 })
             })
-
+        }
         } else if (decodedData?.header == 'WEBSTATS') {
 
             clients.forEach(function (client) {
@@ -644,6 +958,12 @@ wss.on('connection', async (ws) => {
                 });
             })
         }
+    
+    }catch(err){
+        console.log(err)
+    }
+
 
     })
 })
+
