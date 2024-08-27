@@ -5,9 +5,10 @@ import './App.css';
 function App() {
   const [bot, setBot] = useState(false)
   const [app, setApp] = useState(false)
-  const [ up, setUp] = useState(false)
+  const [up, setUp] = useState(false)
   const [hold, setHold] = useState(false)
   const [toggle, setToggle] = useState(true)
+  const [chartNo, setChartNo] = useState(0)
   const [windowSize, setWindowSize] = useState(5)
   const [disabled, setDisabled] = useState(false)
   const [balance, setBalance] = useState(0)
@@ -39,7 +40,81 @@ function App() {
     }
   ]);
 
-  // Options for the chart
+  const [candleSeries, setCandleSeries] = useState([
+    {
+      name: 'Hourly behaviour',
+      type: 'candlestick',
+      data: [{x:0, y:[0,0,0,0]}],
+    },
+    {
+      name: 'Actual Profit',
+      type: 'line',
+      data: [],
+    },
+  ]);
+
+  const candleOptions = {
+    chart: {
+      type: 'candlestick',
+      height: 350,
+    },
+   
+    xaxis: {
+      categories: [],
+      labels: {
+        show: true // Hide horizontal data labels
+      },
+      tooltip: {
+        enabled: false
+      },
+      labels: {
+        show: false
+      }
+    },
+    yaxis: {
+      title: {
+        text: 'Profit'
+      }
+    },
+    
+
+    dataLabels: {
+      enabled: false
+    },
+    colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0'],
+    stroke: {
+      width: 3,
+     
+    },
+    fill: {
+      type: ['gradient', 'solid', 'solid'],
+      opacity: [0.8, 0.9, 0.8, 0.9, 0.5],
+    },
+    tooltip: {
+      enabled: true, // Keep general tooltip enabled
+      shared: true, // Disable shared tooltips if needed
+      x: {
+        show: false // Disable the x value from showing
+      },
+    },
+    chart: {
+      animations: {
+          enabled: true,
+          easing: 'easeinout',
+          speed: 800,
+          animateGradually: {
+              enabled: true,
+              delay: 150
+          },
+          dynamicAnimation: {
+              enabled: true,
+              speed: 350
+          }
+      }
+  }
+,  
+  };
+
   const [options, setOptions] = useState({
     chart: {
       type: 'area',
@@ -52,6 +127,9 @@ function App() {
       },
       tooltip: {
         enabled: false
+      },
+      labels: {
+        show: false
       }
     },
     yaxis: {
@@ -78,7 +156,11 @@ function App() {
       style: {
         fontSize: '14px',
         fontFamily: 'Arial, sans-serif',
-      }
+      },
+     
+      x: {
+        show: false // Disable the x value from showing
+      },
     },
     chart: {
       animations: {
@@ -157,12 +239,11 @@ function App() {
   });
 
 
-
   const [isPaused, setPause] = useState(false);
 
   const ws = useRef(null);
   useEffect(() => {
-    ws.current = new WebSocket("ws://localhost:5000");
+    ws.current = new WebSocket("ws://5.104.81.194:5000");
     ws.current.onopen = () => console.log("ws opened");
     ws.current.onclose = () => console.log("ws closed");
 
@@ -226,22 +307,22 @@ function App() {
           let seriescopy = [...series[0].data]
           let seriescopyMA = [...series[1].data]
           seriescopyMA.push(parseInt(dataArray?.data?.ma))
-        
+
           seriescopy.push(parseInt(dataArray?.data?.value))
-          
+
           setSeries((pre) => ([{ ...pre[0], data: seriescopy }, { ...pre[1], data: seriescopyMA }]))
           let lastcopy = [...last]
-         
-          if(lastcopy.lenght > 20){
+
+          if (lastcopy.lenght > 20) {
             lastcopy.shift()
             lastcopy.reverse()
             lastcopy.push(dataArray?.data)
-          }else{
+          } else {
             lastcopy.reverse()
             lastcopy.push(dataArray?.data)
 
           }
-        
+
           setLast(lastcopy.reverse())
           console.log(optionscopy, seriescopy, lastcopy)
 
@@ -253,7 +334,7 @@ function App() {
         }
 
         if (dataArray?.header == 'BETS') {
-          setBetSeries((pre) => ([{ ...pre[0], data: dataArray?.data?.profit }, { ...pre[1]}]))
+          setBetSeries((pre) => ([{ ...pre[0], data: dataArray?.data?.profit }, { ...pre[1] }]))
           setBetOptions((pre) => ({
             ...pre, xaxis: {
               categories: dataArray?.data?.ids
@@ -263,8 +344,14 @@ function App() {
 
         if (dataArray?.header == 'SIMULATE') {
           setBetSeries((pre) => ([{ ...pre[0], data: dataArray?.data?.values }, { ...pre[1], data: dataArray?.data?.ma }]))
-          
-          
+
+
+        }
+
+        if (dataArray?.header == 'CANDLE') {
+          setCandleSeries((pre) => ([{ ...pre[0], data: dataArray?.data?.values }, { ...pre[1], data: dataArray?.data?.profit }]))
+
+
         }
 
         if (dataArray?.header == 'WEBSTATS') {
@@ -333,8 +420,9 @@ function App() {
       </div>
       <div className="chart">
         <div>
-        {toggle ? (<Chart options={options} series={series} type="area" height={680} width={'100%'} />):
-          (<Chart options={options} series={betSeries} type="area" height={680} width={'100%'} />)}
+          {chartNo == 0 ? (<Chart options={options} series={series} type="area" height={680} width={'100%'} />) : null}
+          {chartNo == 1 ? (<Chart options={options} series={betSeries} type="area" height={680} width={'100%'} />) : null}
+          {chartNo == 2 ? (<Chart options={candleOptions} series={candleSeries} type="candlestick" height={680} width={'100%'} />) : null}
 
           <div className="config">
             <div>
@@ -350,16 +438,23 @@ function App() {
                 <option value="500">500</option>
 
               </select>
-              <button onClick={()=> setToggle(pre=> (!pre))}>📊</button>
+              <button onClick={() =>  {
+                if (chartNo+1 > 2) {
+                  setChartNo(0)
+                }else{
+                  setChartNo(chartNo+1)
+                }
+              }
+              }>📊</button>
             </div>
 
-          <div className="trend">
-            {up? (<div className="arrow-up">🡭</div>) : <div className="arrow-down">🡮</div> }
-           
-            <div className="circle">
-              {hold? (<>⛔</>):(<>⚪</>)}
+            <div className="trend">
+              {up ? (<div className="arrow-up">🡭</div>) : <div className="arrow-down">🡮</div>}
+
+              <div className="circle">
+                {hold ? (<>⛔</>) : (<>⚪</>)}
+              </div>
             </div>
-          </div>
 
 
           </div>
