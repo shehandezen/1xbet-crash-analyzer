@@ -6,7 +6,8 @@
     "activeTab",
     "scripting",
     "tabs",
-    "devtools"
+    "devtools",
+    "debugger"
   ],
   "background": {
     "service_worker": "background.js"
