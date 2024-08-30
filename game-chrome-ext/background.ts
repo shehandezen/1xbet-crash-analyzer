@@ -1,5 +1,7 @@
 let socket: WebSocket;
 
+const tabs:any = []
+
 export function connectWebSocket() {
   socket = new WebSocket('ws://5.104.81.194:5000');
 
@@ -10,6 +12,29 @@ export function connectWebSocket() {
   socket.onmessage = (event) => {
     chrome.runtime.sendMessage(event.data)
     chrome.action.setIcon({ path: 'icons/socket-active.png' });
+
+    // console.log(event.data)
+  
+    let payload = JSON.parse(event.data)
+
+    if(payload.header == 'WAKEUP' || payload.header == 'START' ){
+     chrome.tabs.create({ url: 'https://1xbet.com/en/allgamesentrance/crash/' }, (tab:any) => {
+          console.log(`Opened a new tab with ID: ${tab.id}`);
+          tabs.push(tab.id)  
+
+        });
+    
+    }
+    
+    if(payload.header == 'HOLD' || payload.header == 'STOP' ){
+      console.log(tabs)
+      chrome.tabs.remove(tabs[0], () => {
+        console.log(`Closed tab with ID: ${tabs.id}`);
+        tabs.splice(0,tabs.length)
+      });
+    }
+
+    
 
 
   };
