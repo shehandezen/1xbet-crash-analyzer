@@ -126,11 +126,7 @@ export function connectWebSocket() {
       tabsList.splice(0, tabsList.length)
     }
 
-    chrome.debugger.onDetach.addListener((source, reason)=>{
-      console.log(source, reason)
-    }
-     
-    )
+    
 
 
   };
@@ -156,6 +152,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   socket.send(JSON.stringify(request))
 })
+
+chrome.debugger.onDetach.addListener((source, reason)=>{
+  console.log(source, reason)
+}
+ 
+)
 
 // chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, (tabs: any[]) => {
 //   if (tabs.length > 0) {
