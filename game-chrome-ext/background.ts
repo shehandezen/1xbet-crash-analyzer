@@ -24,10 +24,13 @@ export function connectWebSocket() {
           chrome.debugger.detach({ tabId: tab.id }, () => {
             if (chrome.runtime.lastError) {
               console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
-            } 
-            chrome.tabs.remove(tab.id, () => {
-            console.log(`Closed tab with ID: ${tab.id}`);
-          });
+            } else {
+              console.log('Successfully detached');
+              chrome.tabs.remove(tab.id, () => {
+                console.log(`Closed tab with ID: ${tab.id}`);
+              });
+          } 
+           
           })
 
         }
@@ -41,6 +44,7 @@ export function connectWebSocket() {
 
           let requestId: any
           chrome.debugger.attach({ tabId: tab.id }, "1.3", () => {
+            console.log('Debugger attached');
             chrome.debugger.sendCommand({ tabId: tab.id }, "Network.enable");
             var start: any
             var end: any
@@ -114,11 +118,12 @@ export function connectWebSocket() {
         chrome.debugger.detach({ tabId: tab.id }, () => {
           if (chrome.runtime.lastError) {
             console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
-          } 
-          chrome.tabs.remove(tab.id, () => {
-          console.log(`Closed tab with ID: ${tab.id}`);
-
-        });
+          } else {
+            console.log('Successfully detached');
+            chrome.tabs.remove(tab.id, () => {
+              console.log(`Closed tab with ID: ${tab.id}`);
+            });
+        } 
         })
        
       
