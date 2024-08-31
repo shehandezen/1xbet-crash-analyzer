@@ -19,6 +19,7 @@ export function connectWebSocket() {
 
     if (payload.header == 'WAKEUP' || payload.header == 'START') {
       chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, async (tabs: any[]) => {
+        console.log(tabs)
         for await (let tab of tabs) {
          
           chrome.debugger.detach({ tabId: tab.id }, () => {
@@ -113,22 +114,25 @@ export function connectWebSocket() {
     }
 
     if (payload.header == 'HOLD' || payload.header == 'STOP') {
-     
-      for await (let tab of tabsList) {
-        console.log(tab)
-        chrome.debugger.detach({ tabId: tab.id }, () => {
-          if (chrome.runtime.lastError) {
-            console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
-          } else {
-            console.log('Successfully detached');
-            chrome.tabs.remove(tab.id, () => {
-              console.log(`Closed tab with ID: ${tab.id}`);
-            });
-        } 
-        })
-       
+      chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, async (tabs: any[]) => {
+        console.log(tabs)
+        for await (let tab of tabs) {
+          console.log(tab)
+          chrome.debugger.detach({ tabId: tab.id }, () => {
+            if (chrome.runtime.lastError) {
+              console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
+            } else {
+              console.log('Successfully detached');
+              chrome.tabs.remove(tab.id, () => {
+                console.log(`Closed tab with ID: ${tab.id}`);
+              });
+          } 
+          })
+         
+        
+        }
+      })
       
-      }
       // tabsList.splice(0, tabsList.length)
     }
 
