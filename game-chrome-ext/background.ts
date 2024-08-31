@@ -123,7 +123,11 @@ export function connectWebSocket() {
       tabsList.splice(0, tabsList.length)
     }
 
-
+    chrome.debugger.onDetach.addListener((source, reason)=>{
+      console.log(source, reason)
+    }
+     
+    )
 
 
   };
