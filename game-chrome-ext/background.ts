@@ -29,6 +29,72 @@ export function connectWebSocket() {
           chrome.tabs.create({ url: 'https://1xbet.com/en/allgamesentrance/crash/' }, (tab: any) => {
             console.log(`Opened a new tab with ID: ${tab.id}`);
             tabsList.push(tab)
+            chrome.debugger.detach({ tabId: tabs[0].id }, () => {
+              if (chrome.runtime.lastError) {
+                console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
+              }
+            })
+        
+            let requestId: any
+            chrome.debugger.attach({ tabId: tab.id }, "1.3", () => {
+              chrome.debugger.sendCommand({ tabId: tab.id }, "Network.enable");
+              var start: any
+              var end: any
+              var crash: any
+              var bet = false
+              chrome.debugger.onEvent.addListener((source, method, params: any) => {
+        
+        
+                var timestampLog = '[' + Date.now() + '] ';
+                if (method === "Network.webSocketFrameReceived") {
+        
+                  if (requestId != params.requestId) {
+        
+                    let payloadString = params.response.payloadData.toString('utf8');
+        
+        
+                    try {
+                      payloadString = payloadString.replace(/[^\x20-\x7E]/g, '');
+                      const payload = JSON.parse(payloadString);
+                      // console.log(payload)
+        
+                      if (payloadString.includes('"target":"OnBets"')) {
+                        if (!bet) {
+                          socket.send(JSON.stringify({ header: 'BET' }))
+                          console.log(timestampLog, ' OnBets Event triggered.')
+                          bet = true
+                        }
+                      }
+        
+                      if (payloadString.includes('"target":"OnStage"')) {
+                        console.log({ start: start, end: end, odd: crash })
+                        socket.send(JSON.stringify({ header: 'DATA', data: { start: start, end: end, odd: crash } }))
+        
+                      }
+        
+                      if (payloadString.includes('"target":"OnStart"')) {
+                        const { ts } = payload.arguments[0];
+                        start = ts
+                      }
+                      if (payloadString.includes('"type":1,"target":"OnCrash"')) {
+                        bet = false
+                        const { f, ts } = payload.arguments[0];
+                        crash = f
+                        end = ts
+                        console.log(`${timestampLog} ${f}, ${start}, ${ts}`);
+                        socket.send(JSON.stringify({ header: 'CRASH', data: { odd: f } }))
+                      }
+        
+                    } catch (error) {
+                      console.error(timestampLog, 'Error processing WebSocket frame:', error);
+                    }
+                  }
+        
+                } else if (method === "Network.webSocketFrameSent") {
+                  // console.log("WebSocket frame sent: ", params);
+                }
+              });
+            });
 
           });
 
@@ -36,6 +102,72 @@ export function connectWebSocket() {
           chrome.tabs.create({ url: 'https://1xbet.com/en/allgamesentrance/crash/' }, (tab: any) => {
             console.log(`Opened a new tab with ID: ${tab.id}`);
             tabsList.push(tab)
+            // chrome.debugger.detach({ tabId: tabs[0].id }, () => {
+            //   if (chrome.runtime.lastError) {
+            //     console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
+            //   }
+            // })
+        
+            let requestId: any
+            chrome.debugger.attach({ tabId: tab.id }, "1.3", () => {
+              chrome.debugger.sendCommand({ tabId: tab.id }, "Network.enable");
+              var start: any
+              var end: any
+              var crash: any
+              var bet = false
+              chrome.debugger.onEvent.addListener((source, method, params: any) => {
+        
+        
+                var timestampLog = '[' + Date.now() + '] ';
+                if (method === "Network.webSocketFrameReceived") {
+        
+                  if (requestId != params.requestId) {
+        
+                    let payloadString = params.response.payloadData.toString('utf8');
+        
+        
+                    try {
+                      payloadString = payloadString.replace(/[^\x20-\x7E]/g, '');
+                      const payload = JSON.parse(payloadString);
+                      // console.log(payload)
+        
+                      if (payloadString.includes('"target":"OnBets"')) {
+                        if (!bet) {
+                          socket.send(JSON.stringify({ header: 'BET' }))
+                          console.log(timestampLog, ' OnBets Event triggered.')
+                          bet = true
+                        }
+                      }
+        
+                      if (payloadString.includes('"target":"OnStage"')) {
+                        console.log({ start: start, end: end, odd: crash })
+                        socket.send(JSON.stringify({ header: 'DATA', data: { start: start, end: end, odd: crash } }))
+        
+                      }
+        
+                      if (payloadString.includes('"target":"OnStart"')) {
+                        const { ts } = payload.arguments[0];
+                        start = ts
+                      }
+                      if (payloadString.includes('"type":1,"target":"OnCrash"')) {
+                        bet = false
+                        const { f, ts } = payload.arguments[0];
+                        crash = f
+                        end = ts
+                        console.log(`${timestampLog} ${f}, ${start}, ${ts}`);
+                        socket.send(JSON.stringify({ header: 'CRASH', data: { odd: f } }))
+                      }
+        
+                    } catch (error) {
+                      console.error(timestampLog, 'Error processing WebSocket frame:', error);
+                    }
+                  }
+        
+                } else if (method === "Network.webSocketFrameSent") {
+                  // console.log("WebSocket frame sent: ", params);
+                }
+              });
+            });
 
           });
         }
@@ -82,76 +214,76 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   socket.send(JSON.stringify(request))
 })
 
-chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, (tabs: any[]) => {
-  if (tabs.length > 0) {
-    chrome.debugger.detach({ tabId: tabs[0].id }, () => {
-      if (chrome.runtime.lastError) {
-        console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
-      }
-    })
+// chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, (tabs: any[]) => {
+//   if (tabs.length > 0) {
+//     chrome.debugger.detach({ tabId: tabs[0].id }, () => {
+//       if (chrome.runtime.lastError) {
+//         console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
+//       }
+//     })
 
-    let requestId: any
-    chrome.debugger.attach({ tabId: tabs[0].id }, "1.3", () => {
-      chrome.debugger.sendCommand({ tabId: tabs[0].id }, "Network.enable");
-      var start: any
-      var end: any
-      var crash: any
-      var bet = false
-      chrome.debugger.onEvent.addListener((source, method, params: any) => {
-
-
-        var timestampLog = '[' + Date.now() + '] ';
-        if (method === "Network.webSocketFrameReceived") {
-
-          if (requestId != params.requestId) {
-
-            let payloadString = params.response.payloadData.toString('utf8');
+//     let requestId: any
+//     chrome.debugger.attach({ tabId: tabs[0].id }, "1.3", () => {
+//       chrome.debugger.sendCommand({ tabId: tabs[0].id }, "Network.enable");
+//       var start: any
+//       var end: any
+//       var crash: any
+//       var bet = false
+//       chrome.debugger.onEvent.addListener((source, method, params: any) => {
 
 
-            try {
-              payloadString = payloadString.replace(/[^\x20-\x7E]/g, '');
-              const payload = JSON.parse(payloadString);
-              // console.log(payload)
+//         var timestampLog = '[' + Date.now() + '] ';
+//         if (method === "Network.webSocketFrameReceived") {
 
-              if (payloadString.includes('"target":"OnBets"')) {
-                if (!bet) {
-                  socket.send(JSON.stringify({ header: 'BET' }))
-                  console.log(timestampLog, ' OnBets Event triggered.')
-                  bet = true
-                }
-              }
+//           if (requestId != params.requestId) {
 
-              if (payloadString.includes('"target":"OnStage"')) {
-                console.log({ start: start, end: end, odd: crash })
-                socket.send(JSON.stringify({ header: 'DATA', data: { start: start, end: end, odd: crash } }))
+//             let payloadString = params.response.payloadData.toString('utf8');
 
-              }
 
-              if (payloadString.includes('"target":"OnStart"')) {
-                const { ts } = payload.arguments[0];
-                start = ts
-              }
-              if (payloadString.includes('"type":1,"target":"OnCrash"')) {
-                bet = false
-                const { f, ts } = payload.arguments[0];
-                crash = f
-                end = ts
-                console.log(`${timestampLog} ${f}, ${start}, ${ts}`);
-                socket.send(JSON.stringify({ header: 'CRASH', data: { odd: f } }))
-              }
+//             try {
+//               payloadString = payloadString.replace(/[^\x20-\x7E]/g, '');
+//               const payload = JSON.parse(payloadString);
+//               // console.log(payload)
 
-            } catch (error) {
-              console.error(timestampLog, 'Error processing WebSocket frame:', error);
-            }
-          }
+//               if (payloadString.includes('"target":"OnBets"')) {
+//                 if (!bet) {
+//                   socket.send(JSON.stringify({ header: 'BET' }))
+//                   console.log(timestampLog, ' OnBets Event triggered.')
+//                   bet = true
+//                 }
+//               }
 
-        } else if (method === "Network.webSocketFrameSent") {
-          // console.log("WebSocket frame sent: ", params);
-        }
-      });
-    });
-  }
-});
+//               if (payloadString.includes('"target":"OnStage"')) {
+//                 console.log({ start: start, end: end, odd: crash })
+//                 socket.send(JSON.stringify({ header: 'DATA', data: { start: start, end: end, odd: crash } }))
+
+//               }
+
+//               if (payloadString.includes('"target":"OnStart"')) {
+//                 const { ts } = payload.arguments[0];
+//                 start = ts
+//               }
+//               if (payloadString.includes('"type":1,"target":"OnCrash"')) {
+//                 bet = false
+//                 const { f, ts } = payload.arguments[0];
+//                 crash = f
+//                 end = ts
+//                 console.log(`${timestampLog} ${f}, ${start}, ${ts}`);
+//                 socket.send(JSON.stringify({ header: 'CRASH', data: { odd: f } }))
+//               }
+
+//             } catch (error) {
+//               console.error(timestampLog, 'Error processing WebSocket frame:', error);
+//             }
+//           }
+
+//         } else if (method === "Network.webSocketFrameSent") {
+//           // console.log("WebSocket frame sent: ", params);
+//         }
+//       });
+//     });
+//   }
+// });
 
 
 
