@@ -154,6 +154,11 @@ export function connectWebSocket() {
         chrome.alarms.onAlarm.addListener(() => {
           console.log('Sleep time over. Time to wake up... ')
         });
+
+        setInterval(()=>{
+          console.log('Timer countdown : ', sleepPeriod)
+          sleepPeriod = sleepPeriod - 1
+        },1000)
       }
 
 
