@@ -111,14 +111,16 @@ export function connectWebSocket() {
         chrome.debugger.detach({ tabId: tab.id }, () => {
           if (chrome.runtime.lastError) {
             console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
-          }
-        })
-        chrome.tabs.remove(tab.id, () => {
+          } 
+          chrome.tabs.remove(tab.id, () => {
           console.log(`Closed tab with ID: ${tab.id}`);
 
         });
-        tabsList.splice(0, tabsList.length)
+        })
+       
+      
       }
+      tabsList.splice(0, tabsList.length)
     }
 
 
