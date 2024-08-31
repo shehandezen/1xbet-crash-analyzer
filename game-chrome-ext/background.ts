@@ -20,19 +20,21 @@ export function connectWebSocket() {
     if (payload.header == 'WAKEUP' || payload.header == 'START') {
       chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, async (tabs: any[]) => {
         for await (let tab of tabs) {
-          chrome.tabs.remove(tab.id, () => {
-            console.log(`Closed tab with ID: ${tab.id}`);
-          });
+         
           chrome.debugger.detach({ tabId: tab.id }, () => {
             if (chrome.runtime.lastError) {
               console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
-            }
+            } 
+            chrome.tabs.remove(tab.id, () => {
+            console.log(`Closed tab with ID: ${tab.id}`);
+          });
           })
 
         }
+        tabsList.splice(0, tabsList.length)
 
 
-        chrome.tabs.create({ url: 'https://1xbet.com/en/allgamesentrance/crash/' }, (tab: any) => {
+       await  chrome.tabs.create({ url: 'https://1xbet.com/en/allgamesentrance/crash/' }, (tab: any) => {
           console.log(`Opened a new tab with ID: ${tab.id}`);
           tabsList.push(tab)
 
@@ -106,8 +108,9 @@ export function connectWebSocket() {
     }
 
     if (payload.header == 'HOLD' || payload.header == 'STOP') {
-      console.log(tabsList)
+     
       for await (let tab of tabsList) {
+        console.log(tab)
         chrome.debugger.detach({ tabId: tab.id }, () => {
           if (chrome.runtime.lastError) {
             console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
