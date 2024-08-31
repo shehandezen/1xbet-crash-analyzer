@@ -1,6 +1,6 @@
 let socket: WebSocket;
 
-const tabs:any = []
+const tabsList: any = []
 
 export function connectWebSocket() {
   socket = new WebSocket('ws://5.104.81.194:5000');
@@ -9,32 +9,53 @@ export function connectWebSocket() {
     console.log('WebSocket connection opened');
   };
 
-  socket.onmessage = (event) => {
+  socket.onmessage = async (event) => {
     chrome.runtime.sendMessage(event.data)
     chrome.action.setIcon({ path: 'icons/socket-active.png' });
 
     // console.log(event.data)
-  
+
     let payload = JSON.parse(event.data)
 
-    if(payload.header == 'WAKEUP' || payload.header == 'START' ){
-     chrome.tabs.create({ url: 'https://1xbet.com/en/allgamesentrance/crash/' }, (tab:any) => {
-          console.log(`Opened a new tab with ID: ${tab.id}`);
-          tabs.push(tab.id)  
+    if (payload.header == 'WAKEUP' || payload.header == 'START') {
+      chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, async (tabs: any[]) => {
+        if (tabs.length > 0) {
+          for await (let tab of tabs) {
+            chrome.tabs.remove(tab.id, () => {
+              console.log(`Closed tab with ID: ${tab.id}`);
+            });
+
+          }
+          chrome.tabs.create({ url: 'https://1xbet.com/en/allgamesentrance/crash/' }, (tab: any) => {
+            console.log(`Opened a new tab with ID: ${tab.id}`);
+            tabsList.push(tab)
+
+          });
+
+        } else {
+          chrome.tabs.create({ url: 'https://1xbet.com/en/allgamesentrance/crash/' }, (tab: any) => {
+            console.log(`Opened a new tab with ID: ${tab.id}`);
+            tabsList.push(tab)
+
+          });
+        }
+      })
+
+
+    }
+
+    if (payload.header == 'HOLD' || payload.header == 'STOP') {
+      console.log(tabsList)
+      for await (let tab of tabsList) {
+        chrome.tabs.remove(tab.id, () => {
+          console.log(`Closed tab with ID: ${tab.id}`);
 
         });
-    
-    }
-    
-    if(payload.header == 'HOLD' || payload.header == 'STOP' ){
-      console.log(tabs)
-      chrome.tabs.remove(tabs[0], () => {
-        console.log(`Closed tab with ID: ${tabs.id}`);
-        tabs.splice(0,tabs.length)
-      });
+        tabsList.splice(0, tabsList.length)
+      }
     }
 
-    
+
 
 
   };
@@ -81,9 +102,9 @@ chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, (tab
 
         var timestampLog = '[' + Date.now() + '] ';
         if (method === "Network.webSocketFrameReceived") {
-          
+
           if (requestId != params.requestId) {
-           
+
             let payloadString = params.response.payloadData.toString('utf8');
 
 
@@ -93,15 +114,15 @@ chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, (tab
               // console.log(payload)
 
               if (payloadString.includes('"target":"OnBets"')) {
-                if(!bet){
-                  socket.send(JSON.stringify({header:'BET'}))
+                if (!bet) {
+                  socket.send(JSON.stringify({ header: 'BET' }))
                   console.log(timestampLog, ' OnBets Event triggered.')
                   bet = true
                 }
               }
 
               if (payloadString.includes('"target":"OnStage"')) {
-                console.log({ start: start, end: end, odd: crash } )
+                console.log({ start: start, end: end, odd: crash })
                 socket.send(JSON.stringify({ header: 'DATA', data: { start: start, end: end, odd: crash } }))
 
               }
