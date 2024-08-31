@@ -197,6 +197,11 @@ export function connectWebSocket() {
     if (payload.header == 'HOLD' || payload.header == 'STOP') {
       console.log(tabsList)
       for await (let tab of tabsList) {
+        chrome.debugger.detach({ tabId: tab.id }, () => {
+          if (chrome.runtime.lastError) {
+            console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
+          }
+        })
         chrome.tabs.remove(tab.id, () => {
           console.log(`Closed tab with ID: ${tab.id}`);
 
