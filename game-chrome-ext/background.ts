@@ -22,6 +22,7 @@ export function connectWebSocket() {
         for await (let tab of tabs) {
          
           chrome.debugger.detach({ tabId: tab.id }, () => {
+            console.log(tab.id)
             if (chrome.runtime.lastError) {
               console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
             } else {
@@ -34,7 +35,7 @@ export function connectWebSocket() {
           })
 
         }
-        tabsList.splice(0, tabsList.length)
+        // tabsList.splice(0, tabsList.length)
 
 
        await  chrome.tabs.create({ url: 'https://1xbet.com/en/allgamesentrance/crash/' }, (tab: any) => {
@@ -128,7 +129,7 @@ export function connectWebSocket() {
        
       
       }
-      tabsList.splice(0, tabsList.length)
+      // tabsList.splice(0, tabsList.length)
     }
 
     
