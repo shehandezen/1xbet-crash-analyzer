@@ -20,14 +20,14 @@ export function connectWebSocket() {
     if (payload.header == 'WAKEUP' || payload.header == 'START') {
       chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, async (tabs: any[]) => {
         console.log(tabs)
-        chrome.debugger.detach({ tabId: tabs[0].id }, () => {
-          console.log(tabs[0].id)
+        chrome.debugger.detach({ tabId: tabs[0]?.id }, () => {
+          console.log(tabs[0]?.id)
           if (chrome.runtime.lastError) {
             console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
           } else {
             console.log('Successfully detached', chrome.runtime.lastError);
-            chrome.tabs.remove(tabs[0].id, () => {
-              console.log(`Closed tab with ID: ${tabs[0].id}`);
+            chrome.tabs.remove(tabs[0]?.id, () => {
+              console.log(`Closed tab with ID: ${tabs[0]?.id}`);
             });
         } 
          
