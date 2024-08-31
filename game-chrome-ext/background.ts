@@ -24,16 +24,17 @@ export function connectWebSocket() {
             chrome.tabs.remove(tab.id, () => {
               console.log(`Closed tab with ID: ${tab.id}`);
             });
+            chrome.debugger.detach({ tabId: tab.id }, () => {
+              if (chrome.runtime.lastError) {
+                console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
+              }
+            })
 
           }
           chrome.tabs.create({ url: 'https://1xbet.com/en/allgamesentrance/crash/' }, (tab: any) => {
             console.log(`Opened a new tab with ID: ${tab.id}`);
             tabsList.push(tab)
-            chrome.debugger.detach({ tabId: tabs[0].id }, () => {
-              if (chrome.runtime.lastError) {
-                console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
-              }
-            })
+          
         
             let requestId: any
             chrome.debugger.attach({ tabId: tab.id }, "1.3", () => {
@@ -99,6 +100,20 @@ export function connectWebSocket() {
           });
 
         } else {
+          chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, async (tabs: any[]) => {
+            if (tabs.length > 0) {
+              for await (let tab of tabs) {
+                chrome.tabs.remove(tab.id, () => {
+                  console.log(`Closed tab with ID: ${tab.id}`);
+                });
+                chrome.debugger.detach({ tabId: tab.id }, () => {
+                  if (chrome.runtime.lastError) {
+                    console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
+                  }
+                })
+    
+              }
+              
           chrome.tabs.create({ url: 'https://1xbet.com/en/allgamesentrance/crash/' }, (tab: any) => {
             console.log(`Opened a new tab with ID: ${tab.id}`);
             tabsList.push(tab)
@@ -170,6 +185,9 @@ export function connectWebSocket() {
             });
 
           });
+            }
+            })
+
         }
       })
 
