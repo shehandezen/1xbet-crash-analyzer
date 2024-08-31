@@ -29,11 +29,11 @@ export function connectWebSocket() {
             chrome.tabs.remove(tabs[0]?.id, () => {
               console.log(`Closed tab with ID: ${tabs[0]?.id}`);
             });
-        } 
-         
+          }
+
         })
         // for await (let tab of tabs) {
-         
+
         //   chrome.debugger.detach({ tabId: tab.id }, () => {
         //     console.log(tab.id)
         //     if (chrome.runtime.lastError) {
@@ -44,14 +44,14 @@ export function connectWebSocket() {
         //         console.log(`Closed tab with ID: ${tab.id}`);
         //       });
         //   } 
-           
+
         //   })
 
         // }
         // tabsList.splice(0, tabsList.length)
 
 
-       await  chrome.tabs.create({ url: 'https://1xbet.com/en/allgamesentrance/crash/' }, (tab: any) => {
+        await chrome.tabs.create({ url: 'https://1xbet.com/en/allgamesentrance/crash/' }, (tab: any) => {
           console.log(`Opened a new tab with ID: ${tab.id}`);
           tabsList.push(tab)
 
@@ -59,27 +59,27 @@ export function connectWebSocket() {
           let requestId: any
           chrome.debugger.attach({ tabId: tab.id }, "1.3", () => {
             console.log('Debugger attached');
-            chrome.debugger.sendCommand({ tabId: tab.id }, "Network.enable",{}, ()=>{
+            chrome.debugger.sendCommand({ tabId: tab.id }, "Network.enable", {}, () => {
               var start: any
               var end: any
               var crash: any
               var bet = false
               chrome.debugger.onEvent.addListener((source, method, params: any) => {
                 if (source.tabId !== tab.id) return;
-  
+
                 var timestampLog = '[' + Date.now() + '] ';
                 if (method === "Network.webSocketFrameReceived") {
-  
+
                   if (requestId != params.requestId) {
-  
+
                     let payloadString = params.response.payloadData.toString('utf8');
-  
-  
+
+
                     try {
                       payloadString = payloadString.replace(/[^\x20-\x7E]/g, '');
                       const payload = JSON.parse(payloadString);
                       // console.log(payload)
-  
+
                       if (payloadString.includes('"target":"OnBets"')) {
                         if (!bet) {
                           socket.send(JSON.stringify({ header: 'BET' }))
@@ -87,13 +87,13 @@ export function connectWebSocket() {
                           bet = true
                         }
                       }
-  
+
                       if (payloadString.includes('"target":"OnStage"')) {
                         console.log({ start: start, end: end, odd: crash })
                         socket.send(JSON.stringify({ header: 'DATA', data: { start: start, end: end, odd: crash } }))
-  
+
                       }
-  
+
                       if (payloadString.includes('"target":"OnStart"')) {
                         const { ts } = payload.arguments[0];
                         start = ts
@@ -106,21 +106,21 @@ export function connectWebSocket() {
                         console.log(`${timestampLog} ${f}, ${start}, ${ts}`);
                         socket.send(JSON.stringify({ header: 'CRASH', data: { odd: f } }))
                       }
-  
+
                     } catch (error) {
                       console.error(timestampLog, 'Error processing WebSocket frame:', error);
                     }
                   }
-  
+
                 } else if (method === "Network.webSocketFrameSent") {
                   // console.log("WebSocket frame sent: ", params);
                 }
               });
             });
-  
-  
-            });
-           
+
+
+          });
+
         })
       })
 
@@ -140,17 +140,27 @@ export function connectWebSocket() {
               chrome.tabs.remove(tab.id, () => {
                 console.log(`Closed tab with ID: ${tab.id}`);
               });
-          } 
+            }
           })
-         
-        
+
+
         }
       })
-      
+
+
+      if (payload.header == 'HOLD') {
+        let sleepPeriod: any = parseInt((payload?.data?.period)) / (1000 * 60)
+        chrome.alarms.create('myAlarm', { periodInMinutes: sleepPeriod });
+        chrome.alarms.onAlarm.addListener(() => {
+          console.log('Sleep time over. Time to wake up... ')
+        });
+      }
+
+
       // tabsList.splice(0, tabsList.length)
     }
 
-    
+
 
 
   };
@@ -177,10 +187,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   socket.send(JSON.stringify(request))
 })
 
-chrome.debugger.onDetach.addListener((source, reason)=>{
+chrome.debugger.onDetach.addListener((source, reason) => {
   console.log(source, reason)
 }
- 
+
 )
 
 // chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, (tabs: any[]) => {
