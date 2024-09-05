@@ -51,6 +51,7 @@ window.onload = () => {
         let betDelay = (Math.random() * (1000 - 100) + 100) + inputDelay
 
         if (message.header == 'BET') {
+            console.log('bet signal arrived!')
             setTimeout(function () {
                 autobetSelect.dispatchEvent(clickEvent);
                 baseStakeInput.autocomplete = 'on'
@@ -139,7 +140,7 @@ setInterval(() => {
     const iframe = document.querySelector("#maincontent > div.xgames > div > div > iframe")
     const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
     const waitConnection = innerDoc.querySelector("#app > div.waiting-connection")
-    const balance = document.querySelector("#user-money > div > div.user-money_balance.base-balance > a > div > p").innerText
+    const balance = document.querySelector("#user-money > div > div.user-money_balance.base-balance > a > div > p")?.innerText
 console.log(balance)
     if (!waitConnection) {
         chrome.runtime.sendMessage({ header: 'WEBSTATS', data: { status: 'LIVE', balance: balance } })

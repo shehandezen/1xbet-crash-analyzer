@@ -19,9 +19,9 @@ export function connectWebSocket() {
 
     if (payload.header == 'WAKEUP' || payload.header == 'START') {
       chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, async (tabs: any[]) => {
-        console.log(tabs)
+    
         chrome.debugger.detach({ tabId: tabs[0]?.id }, () => {
-          console.log(tabs[0]?.id)
+       
           if (chrome.runtime.lastError) {
             console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
           } else {
@@ -129,9 +129,9 @@ export function connectWebSocket() {
 
     if (payload.header == 'HOLD' || payload.header == 'STOP') {
       chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, async (tabs: any[]) => {
-        console.log(tabs)
+      
         for await (let tab of tabs) {
-          console.log(tab)
+      
           chrome.debugger.detach({ tabId: tab.id }, () => {
             if (chrome.runtime.lastError) {
               console.log("No existing debugger to detach or other error: ", chrome.runtime.lastError.message);
@@ -150,10 +150,7 @@ export function connectWebSocket() {
 
       if (payload.header == 'HOLD') {
         let sleepPeriod: any = parseInt((payload?.data?.period)) / (1000 * 60)
-        chrome.alarms.create('myAlarm', { periodInMinutes: sleepPeriod });
-        chrome.alarms.onAlarm.addListener(() => {
-          console.log('Sleep time over. Time to wake up... ')
-        });
+       
 
         setInterval(()=>{
           console.log('Timer countdown : ', sleepPeriod)
