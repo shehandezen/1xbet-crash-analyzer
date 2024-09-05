@@ -4,13 +4,49 @@ const tabsList: any = []
 
 export function connectWebSocket() {
   socket = new WebSocket('ws://5.104.81.194:5000');
-
+  
   socket.onopen = () => {
     console.log('WebSocket connection opened');
   };
 
   socket.onmessage = async (event) => {
-    chrome.runtime.sendMessage(event.data)
+    // chrome.runtime.sendMessage(event.data).catch(e=>{console.log(e.message)})
+   
+    let data = JSON.parse(event.data)
+    if(data.header == 'BET' || data.header == 'CRASH'){
+      console.log('bet signal recived')
+
+
+    // var port = chrome.runtime.connect(
+    //   {name: 'socketmsg'}
+    // );
+
+    // port.postMessage(data);
+
+
+    chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, async (tabs: any[]) => {
+      chrome.debugger.sendCommand(
+        { tabId: tabs[0].id },
+        "Runtime.evaluate",
+        {
+            expression: `
+                window.postMessage({ type: 'FROM_DEBUGGER', data: ${event.data} }, '*');
+            `,
+            includeCommandLineAPI: true
+        },
+        (result) => {
+            if (chrome.runtime.lastError) {
+                console.error("Error executing script:", chrome.runtime.lastError.message);
+            } else {
+                console.log("Message sent to content script from debugger");
+            }
+        }
+    );
+    })
+ 
+  }
+
+   
     chrome.action.setIcon({ path: 'icons/socket-active.png' });
 
     // console.log(event.data)
@@ -178,14 +214,12 @@ export function connectWebSocket() {
   };
 }
 
-connectWebSocket();
-
 chrome.scripting
   .getRegisteredContentScripts()
   .then(scripts => console.log("registered content scripts", scripts));
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-
+console.log(request)
   socket.send(JSON.stringify(request))
 })
 
@@ -194,6 +228,10 @@ chrome.debugger.onDetach.addListener((source, reason) => {
 }
 
 )
+
+
+connectWebSocket();
+
 
 // chrome.tabs.query({ url: 'https://1xbet.com/en/allgamesentrance/crash/*' }, (tabs: any[]) => {
 //   if (tabs.length > 0) {
