@@ -184,15 +184,15 @@ export function connectWebSocket() {
       })
 
 
-      if (payload.header == 'HOLD') {
-        let sleepPeriod: any = parseInt((payload?.data?.period)) / (1000 * 60)
+      // if (payload.header == 'HOLD') {
+      //   let sleepPeriod: any = parseInt((payload?.data?.period)) / (1000 * 60)
        
 
-        setInterval(()=>{
-          console.log('Timer countdown : ', sleepPeriod)
-          sleepPeriod = sleepPeriod - 1
-        },1000)
-      }
+      //   setInterval(()=>{
+      //     console.log('Timer countdown : ', sleepPeriod)
+      //     sleepPeriod = sleepPeriod - 1
+      //   },1000)
+      // }
 
 
       // tabsList.splice(0, tabsList.length)
