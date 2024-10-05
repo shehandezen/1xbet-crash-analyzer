@@ -33,8 +33,8 @@ const config = {
   timeData: [{ x: 0, y: [0, 0, 0, 0] }],
   hourData: [0],
   MainProfit: [0],
-  profitTarget: 10,
-  lossLimit: -400,
+  profitTarget: 5,
+  lossLimit: -600,
   profitLimit: 0,
   predictedCrashPoint: 0,
   backupCrashPoint: 0,
@@ -348,7 +348,7 @@ const timeDataCollector = async (value) => {
     !(config.lastTime == 0) &&
     parseInt(config.lastRecords.crashData?.timestamp) -
       parseInt(config.lastTime) >
-      1000 * 60 * 60
+      1000 * 60 * 30
   ) {
     let record = {
       x: config.timeData.length + 1,
@@ -490,7 +490,8 @@ const timeDataCollector = async (value) => {
                 status: "Bet stopped",
                 period:
                   parseInt(config.lastTime) +
-                  1000 * 60 * 55 -
+                  1000 * 60 * 30 -
+
                   parseInt(config.lastRecords.crashData?.timestamp),
               },
             })
@@ -506,13 +507,15 @@ const timeDataCollector = async (value) => {
             );
           });
         }, parseInt(config.lastTime) +
-          1000 * 60 * 55 -
+          1000 * 60 * 30 -
+
           parseInt(config.lastRecords.crashData?.timestamp));
 
         console.log(
           "set timer to wake  up",
           parseInt(config.lastTime) +
-            1000 * 60 * 55 -
+            1000 * 60 * 30 -
+
             parseInt(config.lastRecords.crashData?.timestamp)
         );
 
@@ -538,7 +541,8 @@ const timeDataCollector = async (value) => {
 
   if (
     config.timedown.length >= 1 &&
-    config.hourData[config.hourData.length - 1] > 0
+    config.hourData[config.hourData.length - 1] >= config.timedown[0].value
+
   ) {
     config.timeBet = true;
     console.log("time bet profit");
