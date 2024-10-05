@@ -6,15 +6,16 @@
     "activeTab",
     "scripting",
     "tabs",
-    "devtools"
+    "devtools",
+    "debugger"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "persistent": false
   },
   "action": {
     "default_popup": "popup.html",
-      "default_icon": "icons/socket-inactive.png"
-  
+    "default_icon": "icons/socket-inactive.png"
   },
   "content_scripts": [
     {
@@ -23,11 +24,18 @@
       ],
       "js": [
         "content.js"
-      ]
+      ],
+      "run_at": "document_end"
     }
   ],
   "host_permissions": [
     "http://*/*",
     "https://*/*"
-  ]
+  ],
+  "externally_connectable": {
+    "matches": [
+      "http://*/*",
+      "https://*/*"
+    ]
+  }
 }

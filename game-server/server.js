@@ -491,6 +491,7 @@ const timeDataCollector = async (value) => {
                 period:
                   parseInt(config.lastTime) +
                   1000 * 60 * 30 -
+
                   parseInt(config.lastRecords.crashData?.timestamp),
               },
             })
@@ -507,12 +508,14 @@ const timeDataCollector = async (value) => {
           });
         }, parseInt(config.lastTime) +
           1000 * 60 * 30 -
+
           parseInt(config.lastRecords.crashData?.timestamp));
 
         console.log(
           "set timer to wake  up",
           parseInt(config.lastTime) +
             1000 * 60 * 30 -
+
             parseInt(config.lastRecords.crashData?.timestamp)
         );
 
@@ -539,6 +542,7 @@ const timeDataCollector = async (value) => {
   if (
     config.timedown.length >= 1 &&
     config.hourData[config.hourData.length - 1] >= config.timedown[0].value
+
   ) {
     config.timeBet = true;
     console.log("time bet profit");

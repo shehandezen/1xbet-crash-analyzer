@@ -1,4 +1,14 @@
-window.onload = () => {
+
+console.log('Content script starting ...')
+
+// chrome.runtime.onConnect.addListener(function(port) {
+// port.onMessage.addListener(function(msg) {
+//     console.log(msg)
+// });
+// })
+
+
+
     const config = {
         lastID: 0,
 
@@ -34,8 +44,12 @@ window.onload = () => {
         metaKey: false
     });
 
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        let message = JSON.parse(request.message)
+    window.addEventListener("message", (event) => {
+        // Only accept messages of a specific type
+        if (event.source !== window) return;
+
+        if (event.data.type === "FROM_DEBUGGER") {
+      
         const iframe = document.querySelector("#maincontent > div.xgames > div > div > iframe")
         const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
         const autobetSelect = innerDoc.querySelector("#games_page > div.crash.games-container__game > div > div > div.crash__wrap.crash__wrap--main > div.crash__wrap.crash__wrap--bottom > div.crash__bet.crash-bet > div > button:nth-child(2)")
@@ -50,7 +64,8 @@ window.onload = () => {
         let inputDelay = (Math.random() * (1000 - 100) + 100) + ClickDelay
         let betDelay = (Math.random() * (1000 - 100) + 100) + inputDelay
 
-        if (message.header == 'BET') {
+        if (event.data.data.header == 'BET') {
+    
             setTimeout(function () {
                 autobetSelect.dispatchEvent(clickEvent);
                 baseStakeInput.autocomplete = 'on'
@@ -63,8 +78,8 @@ window.onload = () => {
 
                 autoOdd.click()
                 autoOdd.focus()
-                autoOdd.setAttribute('value', `${message.data?.odd}`)
-                autoOdd.value = `${message.data?.odd}`
+                autoOdd.setAttribute('value', `${event.data.data.data?.odd}`)
+                autoOdd.value = `${event.data.data.data?.odd}`
                 autoOdd.dispatchEvent(inputEvent);
                 autoOdd.dispatchEvent(changeEvent);
                 baseStakeInput.dispatchEvent(keydownEvent)
@@ -73,15 +88,15 @@ window.onload = () => {
                 autoOdd.blur();
 
                 maxStakeInput.focus()
-                maxStakeInput.setAttribute('value', `${(Math.round(parseInt(message.data?.stake))) + 1}`)
+                maxStakeInput.setAttribute('value', `${(Math.round(parseInt(event.data.data.data?.stake))) + 1}`)
                 maxStakeInput.dispatchEvent(inputEvent);
                 maxStakeInput.dispatchEvent(changeEvent);
                 maxStakeInput.blur();
 
 
                 baseStakeInput.focus()
-                baseStakeInput.setAttribute('value', `${Math.round(parseInt(message.data?.stake))}`);
-                baseStakeInput.value = `${Math.round(parseInt(message.data?.stake))}`
+                baseStakeInput.setAttribute('value', `${Math.round(parseInt(event.data.data.data?.stake))}`);
+                baseStakeInput.value = `${Math.round(parseInt(event.data.data.data?.stake))}`
                 console.log(baseStakeInput.value)
                 baseStakeInput.dispatchEvent(inputEvent);
                 baseStakeInput.dispatchEvent(changeEvent);
@@ -98,7 +113,7 @@ window.onload = () => {
 
         }
 
-        if (message.header == 'CRASH') {
+        if (event.data.data.header == 'CRASH') {
 
             if (stopAuto) {
                 stopAuto.dispatchEvent(clickEvent);
@@ -115,6 +130,7 @@ window.onload = () => {
 
                 
                 let result = { header: 'RESULT', data: { date: record[0], time: record[1], roundID: record[2], bet: record[3]?.slice(0, -4), odd: parseFloat(record[4]?.slice(1, -1)), win: record[5]?.slice(0, -4), crash: parseFloat(record[6]?.slice(1, -1)) } }
+
                 if(config.lastID != result.data.roundID){
                     chrome.runtime.sendMessage(result, (response) => {
                         config.lastID = result.data.roundID
@@ -130,17 +146,19 @@ window.onload = () => {
 
 
         }
-    })
-}
 
+            console.log("Received message from debugger:", event.data.data);
+            // Perform any necessary actions
+        }
+    }, false);
 
 setInterval(() => {
 
     const iframe = document.querySelector("#maincontent > div.xgames > div > div > iframe")
     const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
     const waitConnection = innerDoc.querySelector("#app > div.waiting-connection")
-    const balance = document.querySelector("#user-money > div > div.user-money_balance.base-balance > a > div > p").innerText
-console.log(balance)
+    const balance = document.querySelector("#user-money > div > div.user-money_balance.base-balance > a > div > p")?.innerText
+
     if (!waitConnection) {
         chrome.runtime.sendMessage({ header: 'WEBSTATS', data: { status: 'LIVE', balance: balance } })
     } else {
