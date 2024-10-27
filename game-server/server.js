@@ -13,7 +13,7 @@ const app = express();
 app.use(express.json());
 
 var corsOptions = {
-  origin: 'http://5.104.81.194:3000',
+  origin: 'http://5.104.81.194:4000',
   optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
 }
 
