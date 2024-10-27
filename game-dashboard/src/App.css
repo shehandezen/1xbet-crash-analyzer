@@ -268,3 +268,84 @@ div.trend div.arrow-up{
 div.trend div.arrow-down{
   color: #dc3545;
 }
+
+.config-wrapper{
+  position: absolute;
+  width:100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+  z-index: 100000;
+}
+
+.config-window{
+  width: 60vw;
+  height: auto;
+  border-radius: 5px;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+  padding: 15px 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 15px 20px;
+  background: #fff;
+}
+
+.config-window h3{
+  margin: 15px auto ;
+  font-size: 25px;
+  letter-spacing: 1px;
+}
+
+.config-window .form{
+  position: relative;
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content:center;
+  align-items: center;
+  padding: 0px 25px;
+}
+
+.config-window .form .input-container{
+  position: relative;
+  width: 50%;
+  height: auto;
+  padding: 5px;
+  /* border: 1px solid; */
+}
+
+
+.config-window .form .input-container .label{
+  position:relative;
+  margin: 2px auto;
+}
+
+
+.config-window .form .input-container  input {
+  position: relative;
+  width: 90%;
+  padding: 3px 2px;
+}
+
+
+.config-window >.input-container {
+  position: relative;
+  padding: 15px;
+  display: flex;
+  width: 100%;
+}
+
+.config-window >.input-container  button{
+  position: relative;
+  width: 60%;
+  padding: 10px 15px;
+  margin: 5px;
+  cursor: pointer;
+  border-radius: 5px;
+  border: none;
+}

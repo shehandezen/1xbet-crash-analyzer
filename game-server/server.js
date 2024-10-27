@@ -3,6 +3,7 @@ const db = require("./database.js");
 const fs = require('node:fs')
 const predictor = require("./predictor.js");
 const express = require("express");
+const cors = require('cors')
 const schedule = require('node-schedule');
 require("dotenv").config();
 
@@ -10,6 +11,13 @@ const wss = new WebSocket.Server({ port: 5000 });
 const app = express();
 
 app.use(express.json());
+
+var corsOptions = {
+  origin: 'http://5.104.81.194:3000',
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+}
+
+app.use(cors(corsOptions))
 
 
 app.get("/crash", (req, res) => {
@@ -147,29 +155,27 @@ let config = {
 
 
 app.get("/config", (req, res) => {
-    res.json({
-      config: config,
-    });
+  res.json({
+    config: config,
   });
+});
 
 
 
 app.post("/config", (req, res) => {
-  if(req.body){
+  if (req.body) {
     config = {
-      ...config,
-      ...req.body.config
+      ...req.body
     }
-
     res.json({
       success: true,
       config: config,
     });
-  }else{
-     res.json({
-    success: false,
-  }); 
-  } 
+  } else {
+    res.json({
+      success: false,
+    });
+  }
 
 });
 
@@ -884,7 +890,7 @@ wss.on("connection", async (ws) => {
               mixed: config.mixed,
               profit: config.MainProfit,
               ids: ids,
-              betted: config.simulate.values,
+              betted: config.simulate,
               highProfit: config.testValues,
               bets: config.bets,
             },

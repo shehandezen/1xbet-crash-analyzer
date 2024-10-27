@@ -14,6 +14,14 @@ function App() {
   const [balance, setBalance] = useState(0)
   const [last, setLast] = useState([])
   const [point, setPoint] = useState(0)
+  const [viewConfig, setViewConfig] = useState(false)
+  const [config, setConfig] = useState({
+    profitTarget: 1,
+    lossLimit: -1,
+    stake: 0,
+    crash: 1,
+    stoploss: -1,
+  })
   const [series, setSeries] = useState([
     {
       name: 'Profit',
@@ -44,7 +52,7 @@ function App() {
     {
       name: 'Hourly behaviour',
       type: 'candlestick',
-      data: [{x:0, y:[0,0,0,0]}],
+      data: [{ x: 0, y: [0, 0, 0, 0] }],
     },
     {
       name: 'Actual Profit',
@@ -58,7 +66,7 @@ function App() {
       type: 'candlestick',
       height: 350,
     },
-   
+
     xaxis: {
       categories: [],
       labels: {
@@ -76,7 +84,7 @@ function App() {
         text: 'Profit'
       }
     },
-    
+
 
     dataLabels: {
       enabled: false
@@ -84,7 +92,7 @@ function App() {
     colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0'],
     stroke: {
       width: 3,
-     
+
     },
     fill: {
       type: ['gradient', 'solid', 'solid'],
@@ -99,20 +107,20 @@ function App() {
     },
     chart: {
       animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 800,
+        animateGradually: {
           enabled: true,
-          easing: 'easeinout',
-          speed: 800,
-          animateGradually: {
-              enabled: true,
-              delay: 150
-          },
-          dynamicAnimation: {
-              enabled: true,
-              speed: 350
-          }
+          delay: 150
+        },
+        dynamicAnimation: {
+          enabled: true,
+          speed: 350
+        }
       }
-  }
-,  
+    }
+    ,
   };
 
   const [options, setOptions] = useState({
@@ -137,7 +145,7 @@ function App() {
         text: 'Profit'
       }
     },
-    
+
 
     dataLabels: {
       enabled: false
@@ -145,7 +153,7 @@ function App() {
     colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0'],
     stroke: {
       width: 3,
-     
+
     },
     fill: {
       type: ['gradient', 'solid', 'solid'],
@@ -157,27 +165,27 @@ function App() {
         fontSize: '14px',
         fontFamily: 'Arial, sans-serif',
       },
-     
+
       x: {
         show: false // Disable the x value from showing
       },
     },
     chart: {
       animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 800,
+        animateGradually: {
           enabled: true,
-          easing: 'easeinout',
-          speed: 800,
-          animateGradually: {
-              enabled: true,
-              delay: 150
-          },
-          dynamicAnimation: {
-              enabled: true,
-              speed: 350
-          }
+          delay: 150
+        },
+        dynamicAnimation: {
+          enabled: true,
+          speed: 350
+        }
       }
-  }
-,  
+    }
+    ,
     annotations: {
       yaxis: [
         {
@@ -190,7 +198,7 @@ function App() {
               background: '#00E396'
             },
             text: 'Movement',
-           
+
           }
         }
       ]
@@ -223,7 +231,7 @@ function App() {
     colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0'],
     stroke: {
       width: 3,
-     
+
     },
     fill: {
       type: ['gradient', 'solid', 'solid'],
@@ -372,7 +380,14 @@ function App() {
         }
       }
     }
+
+
+
   }, [isPaused])
+
+  useEffect(() => {
+    fetchConfig()
+  }, [viewConfig])
 
 
   setTimeout(() => {
@@ -397,11 +412,65 @@ function App() {
   }
 
   const fetchData = (e) => {
-    console.log(e.target.value)
     if (ws.current) {
       ws.current.send(JSON.stringify({ header: 'DATAREQ', data: { type: 'LINE_PROFIT', limit: e.target.value } }))
     }
   }
+
+  const fetchConfig = async () => {
+    await fetch("http://5.104.81.194:5555/config").then(async (res) => {
+      let data = await res.json()
+      setConfig(data.config)
+      console.log("data :", data.config)
+    }).catch(err => {
+      console.log(err)
+    })
+  }
+
+  const setConfigValues = (value, type) => {
+    console.log("set config: ", value, type)
+    if (type == "stake") {
+      setConfig((state) => {
+        return { ...state, stake: parseInt(value) }
+      })
+    } else if (type == "crash") {
+      setConfig((state) => {
+        return { ...state, crash: parseInt(value) }
+      })
+    } else if (type == "profitTarget") {
+      setConfig((state) => {
+        return { ...state, profitTarget: parseInt(value) }
+      })
+    } else if (type == "lossLimit") {
+      setConfig((state) => {
+        return { ...state, lossLimit: parseInt(value) }
+      })
+    } else if (type == "stopLoss") {
+      setConfig((state) => {
+        return { ...state, stoploss: parseInt(value) }
+      })
+    }
+  }
+
+  const saveConfig = async () => {
+    console.log("save :", config)
+    await fetch("http://5.104.81.194:5555/config", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(config)
+    }).then(async(res)=>{
+      let data = await res.json()
+      if(data.success){
+        setViewConfig(false)
+        console.log('Congigurations saved!')
+      }else{
+        console.log('Something went wrong!')
+      }
+    })
+  }
+
 
 
   return (
@@ -438,14 +507,15 @@ function App() {
                 <option value="500">500</option>
 
               </select>
-              <button onClick={() =>  {
-                if (chartNo+1 > 2) {
+              <button onClick={() => {
+                if (chartNo + 1 > 2) {
                   setChartNo(0)
-                }else{
-                  setChartNo(chartNo+1)
+                } else {
+                  setChartNo(chartNo + 1)
                 }
               }
               }>📊</button>
+              <button onClick={() => { setViewConfig(true) }} style={{ fontSize: "25px" }}>⚙</button>
             </div>
 
             <div className="trend">
@@ -460,6 +530,48 @@ function App() {
           </div>
         </div>
       </div>
+      {viewConfig ? (<div className='config-wrapper'>
+        <div className='config-window'>
+          <h3>Configurations</h3>
+          <div className='form'>
+            <div className='input-container'>
+              <div className='label'>
+                Base stake
+              </div>
+              <input type='number' placeholder='Base Stake' value={config.stake} onChange={(e) => setConfigValues(e.target.value, "stake")} />
+            </div>
+            <div className='input-container'>
+              <div className='label'>
+                Profit multiplyer
+              </div>
+              <input type='number' placeholder='Profit multiplyer' value={config.profitTarget} onChange={(e) => setConfigValues(e.target.value, "profitTarget")} />
+            </div>
+            <div className='input-container'>
+              <div className='label'>
+                Stop loss (high profits)
+              </div>
+              <input type='number' placeholder='Stop loss (high profits)' value={config.stoploss} onChange={(e) => setConfigValues(e.target.value, "stopLoss")} />
+            </div>
+            <div className='input-container'>
+              <div className='label'>
+                Crash odd
+              </div>
+              <input type='number' placeholder='Crash odd' value={config.crash} onChange={(e) => setConfigValues(e.target.value, "crash")} />
+            </div>
+            <div className='input-container'>
+              <div className='label'>
+                Loss limit
+              </div>
+              <input type='number' placeholder='Loss limit' value={config.lossLimit} onChange={(e) => setConfigValues(e.target.value, "lossLimit")} />
+            </div>
+          </div>
+          <div className='input-container'>
+            <button className='start' onClick={() => saveConfig()}> save </button>
+            <button className='stop' onClick={() => { setViewConfig(false) }}> close </button>
+
+          </div>
+        </div>
+      </div>) : null}
       <div className="profitTable">
         <table>
           <tr>
